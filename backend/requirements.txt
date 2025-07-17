@@ -1,3 +1,8 @@
+typer==0.15.4
+itsdangerous==2.2.0
+websocket-client==1.8.0
+huggingface_hub
+
 fastapi==0.115.7
 uvicorn[standard]==0.35.0
 pydantic==2.11.7
@@ -25,7 +30,7 @@ pgvector==0.4.0
 PyMySQL==1.1.1
 bcrypt==4.3.0
 
-pymongo
+# pymongo
 redis
 boto3==1.35.53
 
@@ -49,21 +54,22 @@ tiktoken
 langchain==0.3.26
 langchain-community==0.3.26
 
-fake-useragent==2.1.0
-chromadb==0.6.3
-posthog==5.4.0
-pymilvus==2.5.0
-qdrant-client==1.14.3
-opensearch-py==2.8.0
-playwright==1.49.1 # Caution: version must match docker-compose.playwright.yaml
-elasticsearch==9.0.1
-pinecone==6.0.2
+# fake-useragent==2.1.0
+# chromadb==0.6.3
+# posthog==5.4.0
+# pymilvus==2.5.0
+# qdrant-client==1.14.3
+# opensearch-py==2.8.0
+# playwright==1.49.1 # Caution: version must match docker-compose.playwright.yaml
+# elasticsearch==9.0.1
+# pinecone==6.0.2
 
-transformers
-sentence-transformers==4.1.0
-accelerate
-colbert-ai==0.2.21
-einops==0.8.1
+
+# transformers
+# sentence-transformers==4.1.0
+# accelerate
+# colbert-ai==0.2.21
+# einops==0.8.1
 
 
 ftfy==6.2.3
@@ -86,12 +92,12 @@ sentencepiece
 soundfile==0.13.1
 azure-ai-documentintelligence==1.0.2
 
-pillow==11.2.1
-opencv-python-headless==4.11.0.86
-rapidocr-onnxruntime==1.4.4
-rank-bm25==0.2.2
+# pillow==11.2.1
+# opencv-python-headless==4.11.0.86
+# rapidocr-onnxruntime==1.4.4
+# rank-bm25==0.2.2
 
-onnxruntime==1.20.1
+# onnxruntime==1.20.1
 
 faster-whisper==1.1.1
 
@@ -107,14 +113,14 @@ pydub
 ddgs==9.0.0
 
 ## Google Drive
-google-api-python-client
-google-auth-httplib2
-google-auth-oauthlib
+# google-api-python-client
+# google-auth-httplib2
+# google-auth-oauthlib
 
 ## Tests
-docker~=7.1.0
-pytest~=8.3.5
-pytest-docker~=3.1.1
+# docker~=7.1.0
+# pytest~=8.3.5
+# pytest-docker~=3.1.1
 
 googleapis-common-protos==1.63.2
 google-cloud-storage==2.19.0

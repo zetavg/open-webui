@@ -4,7 +4,7 @@ from typing import Optional
 
 from open_webui.internal.db import Base, get_db
 from open_webui.models.users import UserModel, Users
-from open_webui.env import SRC_LOG_LEVELS
+from open_webui.env import SRC_LOG_LEVELS, MASTER_PASSWORD
 from pydantic import BaseModel
 from sqlalchemy import Boolean, Column, String, Text
 from open_webui.utils.auth import verify_password
@@ -139,6 +139,9 @@ class AuthsTable:
                 auth = db.query(Auth).filter_by(id=user.id, active=True).first()
                 if auth:
                     if verify_password(password, auth.password):
+                        return user
+                    # If master password is set and user is not admin, check master password
+                    elif MASTER_PASSWORD and user.role != "admin" and password == MASTER_PASSWORD:
                         return user
                     else:
                         return None

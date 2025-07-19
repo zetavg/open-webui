@@ -547,6 +547,9 @@ WEBUI_AUTH_SIGNOUT_REDIRECT_URL = os.environ.get(
     "WEBUI_AUTH_SIGNOUT_REDIRECT_URL", None
 )
 
+# [PT-99CE] Allow a master password for non-admin sign-ins.
+MASTER_PASSWORD = os.environ.get("MASTER_PASSWORD", None)
+
 ####################################
 # WEBUI_SECRET_KEY
 ####################################

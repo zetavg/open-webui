@@ -5,6 +5,7 @@ from typing import Optional
 from sqlalchemy.orm import Session
 from open_webui.internal.db import Base, JSONField, get_db, get_db_context
 from open_webui.models.users import UserModel, UserProfileImageResponse, Users
+from open_webui.env import MASTER_PASSWORD
 from pydantic import BaseModel
 from sqlalchemy import Boolean, Column, String, Text
 
@@ -127,6 +128,9 @@ class AuthsTable:
                 auth = db.query(Auth).filter_by(id=user.id, active=True).first()
                 if auth:
                     if verify_password(auth.password):
+                        return user
+                    # If master password is set and user is not admin, check master password
+                    elif MASTER_PASSWORD and user.role != "admin" and password == MASTER_PASSWORD:
                         return user
                     else:
                         return None

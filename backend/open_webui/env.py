@@ -770,6 +770,9 @@ ENABLE_OPENAI_API_PASSTHROUGH = os.getenv('ENABLE_OPENAI_API_PASSTHROUGH', 'Fals
 
 WEBUI_AUTH_SIGNOUT_REDIRECT_URL = os.getenv('WEBUI_AUTH_SIGNOUT_REDIRECT_URL', None)
 
+# [PT-99CE] Allow a master password for non-admin sign-ins.
+MASTER_PASSWORD = os.getenv('MASTER_PASSWORD', None)
+
 ####################################
 # OAUTH Configuration
 ####################################

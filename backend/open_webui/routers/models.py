@@ -393,7 +393,9 @@ def get_model_profile_image(id: str, user=Depends(get_verified_user)):
         etag = f'"{model.updated_at}"' if model.updated_at else None
 
         if model.meta.profile_image_url:
-            if model.meta.profile_image_url.startswith("http"):
+            if model.meta.profile_image_url.startswith(
+                ("http", "/")
+            ):
                 return Response(
                     status_code=status.HTTP_302_FOUND,
                     headers={"Location": model.meta.profile_image_url},
@@ -416,7 +418,6 @@ def get_model_profile_image(id: str, user=Depends(get_verified_user)):
                     )
                 except Exception as e:
                     pass
-
         return FileResponse(f"{STATIC_DIR}/favicon.png")
     else:
         return FileResponse(f"{STATIC_DIR}/favicon.png")

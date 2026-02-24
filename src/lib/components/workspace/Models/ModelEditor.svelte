@@ -102,6 +102,7 @@
 	let actionIds = [];
 	let accessGrants = [];
 	let tts = { voice: '' };
+	let apiOverride = '';
 
 	const submitHandler = async () => {
 		loading = true;
@@ -217,6 +218,20 @@
 			}
 		}
 
+		if (apiOverride.trim() !== '') {
+			try {
+				info.meta.__api_override__ = JSON.parse(apiOverride);
+			} catch (e) {
+				toast.error($i18n.t('API Override must be valid JSON.'));
+				loading = false;
+				return;
+			}
+		} else {
+			if (info.meta.__api_override__) {
+				delete info.meta.__api_override__;
+			}
+		}
+
 		info.params.system = system.trim() === '' ? null : system;
 		info.params.stop = params.stop
 			? (typeof params.stop === 'string' ? params.stop.split(',') : params.stop).filter((s) =>
@@ -305,6 +320,9 @@
 			defaultFeatureIds = model?.meta?.defaultFeatureIds ?? [];
 			builtinTools = model?.meta?.builtinTools ?? {};
 			tts = { voice: model?.meta?.tts?.voice ?? '' };
+			apiOverride = model?.meta?.__api_override__
+				? JSON.stringify(model.meta.__api_override__, null, 2)
+				: '';
 
 			accessGrants = model?.access_grants ?? [];
 
@@ -827,6 +845,20 @@
 							type="text"
 							bind:value={tts.voice}
 							placeholder={$i18n.t('e.g. alloy, echo, shimmer')}
+						/>
+					</div>
+
+					<div class="my-4">
+						<div class="flex w-full justify-between mb-1">
+							<div class="self-center text-xs font-medium text-gray-500">
+								{$i18n.t('API Override')}
+							</div>
+						</div>
+						<textarea
+							class="w-full text-sm bg-transparent outline-hidden resize-none font-mono"
+							rows="4"
+							bind:value={apiOverride}
+							placeholder={'{"reasoning": {"effort": "medium"}}'}
 						/>
 					</div>
 

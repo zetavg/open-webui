@@ -1238,6 +1238,11 @@ async def generate_chat_completion(
         elif model_api_type == 'chat_completions':
             is_responses = False
 
+    # [PT-2E25] Keep task calls on Chat Completions.
+    # Task calls expect the Chat Completions response format.
+    if is_responses and metadata and metadata.get('task'):
+        is_responses = False
+
     if api_config.get('azure') or api_config.get('provider') == 'azure':
         # Only set api-key header if not using Azure Entra ID authentication
         auth_type = api_config.get('auth_type', 'bearer')

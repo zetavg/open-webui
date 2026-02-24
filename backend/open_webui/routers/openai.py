@@ -1106,6 +1106,11 @@ async def generate_chat_completion(
         elif model_api_type == "chat_completions":
             is_responses = False
 
+    # [PT-2E25] Keep task calls on Chat Completions.
+    # Task calls expect the Chat Completions response format.
+    if is_responses and metadata and metadata.get("task"):
+        is_responses = False
+
     if api_config.get("azure", False):
         api_version = api_config.get("api_version", "2023-03-15-preview")
         request_url, payload = convert_to_azure_payload(url, payload, api_version)

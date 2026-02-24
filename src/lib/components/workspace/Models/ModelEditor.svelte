@@ -102,7 +102,7 @@
 	let actionIds = [];
 	let accessGrants = [];
 	let tts = { voice: '' };
-	let responsesApiOverrides = '';
+	let apiOverride = '';
 
 	const submitHandler = async () => {
 		loading = true;
@@ -218,17 +218,17 @@
 			}
 		}
 
-		if (responsesApiOverrides.trim() !== '') {
+		if (apiOverride.trim() !== '') {
 			try {
-				info.meta.__responses_api_overrides__ = JSON.parse(responsesApiOverrides);
+				info.meta.__api_override__ = JSON.parse(apiOverride);
 			} catch (e) {
-				toast.error($i18n.t('Responses API Overrides must be valid JSON.'));
+				toast.error($i18n.t('API Override must be valid JSON.'));
 				loading = false;
 				return;
 			}
 		} else {
-			if (info.meta.__responses_api_overrides__) {
-				delete info.meta.__responses_api_overrides__;
+			if (info.meta.__api_override__) {
+				delete info.meta.__api_override__;
 			}
 		}
 
@@ -316,8 +316,8 @@
 			defaultFeatureIds = model?.meta?.defaultFeatureIds ?? [];
 			builtinTools = model?.meta?.builtinTools ?? {};
 			tts = { voice: model?.meta?.tts?.voice ?? '' };
-			responsesApiOverrides = model?.meta?.__responses_api_overrides__
-				? JSON.stringify(model.meta.__responses_api_overrides__, null, 2)
+			apiOverride = model?.meta?.__api_override__
+				? JSON.stringify(model.meta.__api_override__, null, 2)
 				: '';
 
 			accessGrants = model?.access_grants ?? [];
@@ -846,14 +846,14 @@
 					<div class="my-4">
 						<div class="flex w-full justify-between mb-1">
 							<div class="self-center text-xs font-medium text-gray-500">
-								{$i18n.t('Responses API Overrides')}
+								{$i18n.t('API Override')}
 							</div>
 						</div>
 						<textarea
 							class="w-full text-sm bg-transparent outline-hidden resize-none font-mono"
 							rows="4"
-							bind:value={responsesApiOverrides}
-							placeholder={'{"tools": [{"type": "web_search"}], "reasoning": {"effort": "medium"}}'}
+							bind:value={apiOverride}
+							placeholder={'{"reasoning": {"effort": "medium"}}'}
 						/>
 					</div>
 

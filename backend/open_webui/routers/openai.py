@@ -1117,18 +1117,18 @@ async def generate_chat_completion(
         else:
             request_url = f"{url}/chat/completions"
 
-    # [PATCH] Apply per-model Responses API overrides from model metadata.
-    # Stored in model meta as "__responses_api_overrides__": { ... }
-    # Deep-merged into the payload after conversion, so it can inject/override
-    # any Responses API fields (e.g. tools, text, reasoning, store, include).
-    if is_responses and model_info:
-        responses_overrides = (
-            model_info.meta.model_dump().get("__responses_api_overrides__")
+    # [PATCH] Apply per-model API overrides from model metadata.
+    # Stored in model meta as "__api_override__": { ... }
+    # Deep-merged into the payload after URL routing, so it can inject/override
+    # any API fields (works for both Chat Completions and Responses API).
+    if model_info:
+        api_override = (
+            model_info.meta.model_dump().get("__api_override__")
             if model_info.meta
             else None
         )
-        if responses_overrides and isinstance(responses_overrides, dict):
-            payload = deep_merge(payload, responses_overrides)
+        if api_override and isinstance(api_override, dict):
+            payload = deep_merge(payload, api_override)
 
     payload = json.dumps(payload)
 

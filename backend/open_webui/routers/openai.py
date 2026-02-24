@@ -1136,7 +1136,8 @@ async def generate_chat_completion(
     # Stored in model meta as "__api_override__": { ... }
     # Deep-merged into the payload after URL routing, so it can inject/override
     # any API fields (works for both Chat Completions and Responses API).
-    if model_info:
+    # Skipped for task calls since they always use Chat Completions format.
+    if model_info and not (metadata and metadata.get("task")):
         api_override = (
             model_info.meta.model_dump().get("__api_override__")
             if model_info.meta

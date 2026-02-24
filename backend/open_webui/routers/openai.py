@@ -824,6 +824,29 @@ def convert_to_azure_payload(url, payload: dict, api_version: str):
     return url, payload
 
 
+def deep_merge(base: dict, override: dict) -> dict:
+    """
+    Recursively merge override into base. Lists are concatenated (override appended).
+    """
+    result = {**base}
+    for key, value in override.items():
+        if (
+            key in result
+            and isinstance(result[key], dict)
+            and isinstance(value, dict)
+        ):
+            result[key] = deep_merge(result[key], value)
+        elif (
+            key in result
+            and isinstance(result[key], list)
+            and isinstance(value, list)
+        ):
+            result[key] = result[key] + value
+        else:
+            result[key] = value
+    return result
+
+
 def convert_to_responses_payload(payload: dict) -> dict:
     """
     Convert Chat Completions payload to Responses API format.
@@ -1093,6 +1116,19 @@ async def generate_chat_completion(
             request_url = f"{url}/responses"
         else:
             request_url = f"{url}/chat/completions"
+
+    # [PATCH] Apply per-model Responses API overrides from model metadata.
+    # Stored in model meta as "__responses_api_overrides__": { ... }
+    # Deep-merged into the payload after conversion, so it can inject/override
+    # any Responses API fields (e.g. tools, text, reasoning, store, include).
+    if is_responses and model_info:
+        responses_overrides = (
+            model_info.meta.model_dump().get("__responses_api_overrides__")
+            if model_info.meta
+            else None
+        )
+        if responses_overrides and isinstance(responses_overrides, dict):
+            payload = deep_merge(payload, responses_overrides)
 
     payload = json.dumps(payload)
 

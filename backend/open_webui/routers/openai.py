@@ -885,6 +885,11 @@ def convert_to_responses_payload(payload: dict) -> dict:
     if system_content:
         responses_payload["instructions"] = system_content
 
+    if "max_completion_tokens" in responses_payload:
+        responses_payload["max_output_tokens"] = responses_payload.pop(
+            "max_completion_tokens"
+        )
+
     if "max_tokens" in responses_payload:
         responses_payload["max_output_tokens"] = responses_payload.pop("max_tokens")
 

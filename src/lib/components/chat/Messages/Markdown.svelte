@@ -25,6 +25,8 @@
 	export let editCodeBlock = true;
 	export let topPadding = false;
 	export let allowEmbeds = true;
+	// [PT-23C9] Auto-collapse very large code blocks in user messages.
+	export let collapseCodeLineThreshold = 0;
 
 	export let sourceIds = [];
 
@@ -95,6 +97,7 @@
 </script>
 
 {#key id}
+	<!-- [PT-23C9] Auto-collapse very large code blocks in user messages. -->
 	<MarkdownTokens
 		{tokens}
 		{id}
@@ -103,6 +106,7 @@
 		{preview}
 		{paragraphTag}
 		{editCodeBlock}
+		{collapseCodeLineThreshold}
 		{sourceIds}
 		{topPadding}
 		{allowEmbeds}

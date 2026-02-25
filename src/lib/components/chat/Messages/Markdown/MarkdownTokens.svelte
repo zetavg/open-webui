@@ -42,6 +42,8 @@
 	export let editCodeBlock = true;
 	export let topPadding = false;
 	export let allowEmbeds = true;
+	// [PT-23C9] Auto-collapse very large code blocks in user messages.
+	export let collapseCodeLineThreshold = 0;
 
 	export let onSave: Function = () => {};
 	export let onUpdate: Function = () => {};
@@ -154,9 +156,11 @@
 		</svelte:element>
 	{:else if token.type === 'code'}
 		{#if token.raw.includes('```')}
+			<!-- [PT-23C9] Auto-collapse very large code blocks in user messages. -->
 			<CodeBlock
 				id={`${id}-${tokenIdx}`}
 				collapsed={$settings?.collapseCodeBlocks ?? false}
+				{collapseCodeLineThreshold}
 				{token}
 				lang={token?.lang ?? ''}
 				code={token?.text ?? ''}

@@ -378,6 +378,7 @@
 									content={message.content}
 									{editCodeBlock}
 									{topPadding}
+									collapseCodeLineThreshold={200}
 								/>
 							{/if}
 						</div>

@@ -37,6 +37,7 @@
 	export let run = true;
 	export let preview = false;
 	export let collapsed = false;
+	export let collapseCodeLineThreshold = 0;
 
 	export let token;
 	export let lang = '';
@@ -408,6 +409,10 @@
 	onMount(async () => {
 		if (token) {
 			onUpdate(token);
+		}
+
+		if (collapseCodeLineThreshold > 0 && code && code.split('\n').length > collapseCodeLineThreshold) {
+			collapsed = true;
 		}
 	});
 

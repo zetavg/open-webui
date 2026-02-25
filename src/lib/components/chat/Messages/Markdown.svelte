@@ -22,6 +22,7 @@
 	export let paragraphTag = 'p';
 	export let editCodeBlock = true;
 	export let topPadding = false;
+	export let collapseCodeLineThreshold = 0;
 
 	export let sourceIds = [];
 
@@ -71,6 +72,7 @@
 		{preview}
 		{paragraphTag}
 		{editCodeBlock}
+		{collapseCodeLineThreshold}
 		{sourceIds}
 		{topPadding}
 		{onTaskClick}

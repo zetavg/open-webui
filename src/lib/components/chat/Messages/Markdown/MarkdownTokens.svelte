@@ -39,6 +39,7 @@
 
 	export let editCodeBlock = true;
 	export let topPadding = false;
+	export let collapseCodeLineThreshold = 0;
 
 	export let onSave: Function = () => {};
 	export let onUpdate: Function = () => {};
@@ -109,6 +110,7 @@
 			<CodeBlock
 				id={`${id}-${tokenIdx}`}
 				collapsed={$settings?.collapseCodeBlocks ?? false}
+				{collapseCodeLineThreshold}
 				{token}
 				lang={token?.lang ?? ''}
 				code={token?.text ?? ''}

@@ -377,11 +377,13 @@
 						>
 							{#if message.content}
 								{#if $settings?.renderMarkdownInUserMessages ?? true}
+									<!-- [PT-23C9] Auto-collapse very large code blocks in user messages. -->
 									<Markdown
 										id={`${chatId}-${message.id}`}
 										content={message.content}
 										{editCodeBlock}
 										{topPadding}
+										collapseCodeLineThreshold={200}
 									/>
 								{:else}
 									<div class="whitespace-pre-wrap" dir={$settings?.chatDirection ?? 'auto'}>

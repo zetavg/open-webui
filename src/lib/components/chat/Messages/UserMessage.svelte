@@ -383,11 +383,13 @@
 							{#if message.content}
 								{#if $settings?.renderMarkdownInUserMessages ?? true}
 									<div class="markdown-prose">
+										<!-- [PT-23C9] Auto-collapse very large code blocks in user messages. -->
 										<Markdown
 											id={`${chatId}-${message.id}`}
 											content={message.content}
 											{editCodeBlock}
 											{topPadding}
+											collapseCodeLineThreshold={200}
 										/>
 									</div>
 								{:else}

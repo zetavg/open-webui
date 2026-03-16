@@ -1096,6 +1096,16 @@ async def generate_chat_completion(
 
     is_responses = api_config.get("api_type") == "responses"
 
+    # [PT-FA50] Let `__api_type__` in model metadata override the API type (Chat Completions or Responses API).
+    # Stored in model meta as "__api_type__": "responses" or "chat_completions".
+    # Overrides the connection-level api_type setting.
+    if model_info and model_info.meta:
+        model_api_type = model_info.meta.model_dump().get("__api_type__")
+        if model_api_type == "responses":
+            is_responses = True
+        elif model_api_type == "chat_completions":
+            is_responses = False
+
     if api_config.get("azure", False):
         api_version = api_config.get("api_version", "2023-03-15-preview")
         request_url, payload = convert_to_azure_payload(url, payload, api_version)

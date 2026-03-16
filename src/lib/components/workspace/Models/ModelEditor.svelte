@@ -104,6 +104,8 @@
 	let tts = { voice: '' };
 	// [PT-EE0E] Let `__api_override__` in model metadata override API request fields.
 	let apiOverride = '';
+	// [PT-FA50] Let `__api_type__` in model metadata override the API type (Chat Completions or Responses API).
+	let apiType = '';
 
 	const submitHandler = async () => {
 		loading = true;
@@ -234,6 +236,15 @@
 			}
 		}
 
+		// [PT-FA50] Let `__api_type__` in model metadata override the API type (Chat Completions or Responses API).
+		if (apiType !== '') {
+			info.meta.__api_type__ = apiType;
+		} else {
+			if (info.meta.__api_type__) {
+				delete info.meta.__api_type__;
+			}
+		}
+
 		info.params.system = system.trim() === '' ? null : system;
 		info.params.stop = params.stop
 			? (typeof params.stop === 'string' ? params.stop.split(',') : params.stop).filter((s) =>
@@ -326,6 +337,8 @@
 			apiOverride = model?.meta?.__api_override__
 				? JSON.stringify(model.meta.__api_override__, null, 2)
 				: '';
+			// [PT-FA50] Let `__api_type__` in model metadata override the API type (Chat Completions or Responses API).
+			apiType = model?.meta?.__api_type__ ?? '';
 
 			accessGrants = model?.access_grants ?? [];
 
@@ -849,6 +862,23 @@
 							bind:value={tts.voice}
 							placeholder={$i18n.t('e.g. alloy, echo, shimmer')}
 						/>
+					</div>
+
+					<!-- [PT-FA50] Let `__api_type__` in model metadata override the API type (Chat Completions or Responses API). -->
+					<div class="my-4">
+						<div class="flex w-full justify-between mb-1">
+							<div class="self-center text-xs font-medium text-gray-500">
+								{$i18n.t('API Type')}
+							</div>
+						</div>
+						<select
+							class="w-full text-sm bg-transparent outline-hidden"
+							bind:value={apiType}
+						>
+							<option value="">{$i18n.t('Default (use connection setting)')}</option>
+							<option value="chat_completions">{$i18n.t('Chat Completions')}</option>
+							<option value="responses">{$i18n.t('Responses')}</option>
+						</select>
 					</div>
 
 					<!-- [PT-EE0E] Let `__api_override__` in model metadata override API request fields. -->

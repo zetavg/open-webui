@@ -1463,7 +1463,9 @@ async def chat_memory_handler(request: Request, form_data: dict, extra_params: d
             QueryMemoryForm(
                 **{
                     'content': get_last_user_message(form_data['messages']) or '',
-                    'k': 3,
+                    # [PT-B1ED] Expand chat memory context passed to models.
+                    # 'k': 3,
+                    'k': 12,
                 }
             ),
             user,
@@ -1485,7 +1487,9 @@ async def chat_memory_handler(request: Request, form_data: dict, extra_params: d
                 user_context += f'{doc_idx + 1}. [{created_at_date}] {doc}\n'
 
     form_data['messages'] = add_or_update_system_message(
-        f'User Context:\n{user_context}\n', form_data['messages'], append=True
+        # [PT-B1ED] Expand chat memory context passed to models.
+        # f'User Context:\n{user_context}\n', form_data['messages'], append=True
+        f'# Model Set Context:\n{user_context}\n', form_data['messages'], append=True
     )
 
     return form_data
@@ -4959,9 +4963,9 @@ async def streaming_chat_response_handler(response, ctx):
                                 if CODE_INTERPRETER_BLOCKED_MODULES:
                                     blocking_code = textwrap.dedent(f"""
                                         import builtins
-    
+
                                         BLOCKED_MODULES = {CODE_INTERPRETER_BLOCKED_MODULES}
-    
+
                                         _real_import = builtins.__import__
                                         async def restricted_import(name, globals=None, locals=None, fromlist=(), level=0):
                                             if name.split('.')[0] in BLOCKED_MODULES:
@@ -4971,7 +4975,7 @@ async def streaming_chat_response_handler(response, ctx):
                                                         f"Direct import of module {{name}} is restricted."
                                                     )
                                             return _real_import(name, globals, locals, fromlist, level)
-    
+
                                         builtins.__import__ = restricted_import
                                     """)
                                     code = blocking_code + '\n' + code

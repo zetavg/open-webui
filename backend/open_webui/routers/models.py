@@ -539,7 +539,9 @@ async def get_model_profile_image(
                 break
 
     if profile_image_url:
-        if profile_image_url.startswith('http'):
+        # [PT-1812] Allow model profile images to use site-relative URLs.
+        # if profile_image_url.startswith('http'):
+        if profile_image_url.startswith(('http', '/')):
             if ENABLE_PROFILE_IMAGE_URL_FORWARDING:
                 return Response(
                     status_code=status.HTTP_302_FOUND,

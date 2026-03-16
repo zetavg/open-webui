@@ -178,6 +178,8 @@
 	let speakingIdx: number | undefined;
 
 	let loadingSpeech = false;
+	// [PT-1F7D] Add button for downloading Read Aloud generated audio.
+	let downloadingAudio = false;
 
 	let showRateComment = false;
 
@@ -336,6 +338,90 @@
 					}
 				}
 			}
+		}
+	};
+
+	// [PT-1F7D] Add button for downloading Read Aloud generated audio.
+	const downloadAudio = async () => {
+		if (!(message?.content ?? '').trim().length) {
+			toast.info($i18n.t('No content to speak'));
+			return;
+		}
+
+		const content = removeAllDetails(message.content);
+
+		const getVoiceId = () => {
+			if (model?.info?.meta?.tts?.voice) return model.info.meta.tts.voice;
+			if ($settings?.audio?.tts?.defaultVoice === $config.audio.tts.voice) {
+				return $settings?.audio?.tts?.voice ?? $config?.audio?.tts?.voice;
+			}
+			return $config?.audio?.tts?.voice;
+		};
+
+		if ($config.audio.tts.engine === '') {
+			toast.info($i18n.t('Download not available for browser TTS engine'));
+			return;
+		}
+
+		downloadingAudio = true;
+		try {
+			const messageContentParts: string[] = getMessageContentParts(
+				content,
+				$config?.audio?.tts?.split_on ?? 'punctuation'
+			);
+
+			if (!messageContentParts.length) {
+				toast.info($i18n.t('No content to speak'));
+				downloadingAudio = false;
+				return;
+			}
+
+			const voiceId = getVoiceId();
+			const blobs: Blob[] = [];
+
+			if ($settings.audio?.tts?.engine === 'browser-kokoro') {
+				if (!$TTSWorker) {
+					await TTSWorker.set(
+						new KokoroWorker({
+							dtype: $settings.audio?.tts?.engineConfig?.dtype ?? 'fp32'
+						})
+					);
+					await $TTSWorker.init();
+				}
+
+				for (const sentence of messageContentParts) {
+					const url = await $TTSWorker.generate({ text: sentence, voice: voiceId });
+					if (url) {
+						const res = await fetch(url);
+						blobs.push(await res.blob());
+					}
+				}
+			} else {
+				for (const sentence of messageContentParts) {
+					const res = await synthesizeOpenAISpeech(localStorage.token, voiceId, sentence);
+					if (res) {
+						blobs.push(await res.blob());
+					}
+				}
+			}
+
+			if (blobs.length > 0) {
+				const combined = new Blob(blobs, { type: blobs[0].type || 'audio/mpeg' });
+				const url = URL.createObjectURL(combined);
+				const a = document.createElement('a');
+				a.href = url;
+				a.download = `tts-${message.id}.mp3`;
+				document.body.appendChild(a);
+				a.click();
+				document.body.removeChild(a);
+				URL.revokeObjectURL(url);
+				toast.success($i18n.t('Audio downloaded'));
+			}
+		} catch (error) {
+			console.error(error);
+			toast.error(`${error}`);
+		} finally {
+			downloadingAudio = false;
 		}
 	};
 
@@ -1091,6 +1177,51 @@
 														stroke-linecap="round"
 														stroke-linejoin="round"
 														d="M19.114 5.636a9 9 0 010 12.728M16.463 8.288a5.25 5.25 0 010 7.424M6.75 8.25l4.72-4.72a.75.75 0 011.28.53v15.88a.75.75 0 01-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.01 9.01 0 012.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75z"
+													/>
+												</svg>
+											{/if}
+										</button>
+									</Tooltip>
+
+									<!-- [PT-1F7D] Add button for downloading Read Aloud generated audio. -->
+									<Tooltip content={$i18n.t('Download Audio')} placement="bottom">
+										<button
+											aria-label={$i18n.t('Download Audio')}
+											class="{isLastMessage || ($settings?.highContrastMode ?? false)
+												? 'visible'
+												: 'invisible group-hover:visible'} p-1.5 hover:bg-black/5 dark:hover:bg-white/5 rounded-lg dark:hover:text-white hover:text-black transition"
+											disabled={downloadingAudio}
+											on:click={() => {
+												if (!downloadingAudio) {
+													downloadAudio();
+												}
+											}}
+										>
+											{#if downloadingAudio}
+												<svg
+													class="w-4 h-4 animate-spin"
+													viewBox="0 0 24 24"
+													fill="none"
+													aria-hidden="true"
+													xmlns="http://www.w3.org/2000/svg"
+												>
+													<circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2.3" opacity="0.25" />
+													<path d="M12 2a10 10 0 019.75 7.75" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" />
+												</svg>
+											{:else}
+												<svg
+													xmlns="http://www.w3.org/2000/svg"
+													fill="none"
+													viewBox="0 0 24 24"
+													aria-hidden="true"
+													stroke-width="2.3"
+													stroke="currentColor"
+													class="w-4 h-4"
+												>
+													<path
+														stroke-linecap="round"
+														stroke-linejoin="round"
+														d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"
 													/>
 												</svg>
 											{/if}

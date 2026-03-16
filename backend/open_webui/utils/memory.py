@@ -312,7 +312,9 @@ async def add_memory_context(request, form_data: dict, user, model: dict | None 
     try:
         from open_webui.routers.memories import QueryMemoryForm, query_memory
 
-        results = await query_memory(request, QueryMemoryForm(content=query, k=8), user)
+        # [PT-B1ED] Expand chat memory context passed to models.
+        # results = await query_memory(request, QueryMemoryForm(content=query, k=8), user)
+        results = await query_memory(request, QueryMemoryForm(content=query, k=12), user)
     except Exception as e:
         log.debug(e)
 

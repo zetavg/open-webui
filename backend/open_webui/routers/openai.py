@@ -1144,6 +1144,9 @@ async def generate_chat_completion(
             if model_info.meta
             else None
         )
+        # [PT-D687] Keep task calls from applying model metadata API overrides.
+        if metadata and metadata.get("task"):
+            api_override = None
         if api_override and isinstance(api_override, dict):
             payload = deep_merge(payload, api_override)
 

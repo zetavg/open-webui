@@ -114,6 +114,9 @@
 	export let suggestionTags: { name: string }[] = [];
 	let voices: { id: string; name?: string }[] = [];
 
+	// [PT-EE0E] Let `__api_override__` in model metadata override API request fields.
+	let apiOverride = '';
+
 	const chatVariableKeyRegex = /^[a-z][a-z0-9_]*$/;
 	const getChatVariablesPreview = (prompt: string) => {
 		const variables = extractInputVariables(prompt);
@@ -353,6 +356,21 @@
 			}
 		}
 
+		// [PT-EE0E] Let `__api_override__` in model metadata override API request fields.
+		if (apiOverride.trim() !== '') {
+			try {
+				info.meta.__api_override__ = JSON.parse(apiOverride);
+			} catch (e) {
+				toast.error($i18n.t('API Override must be valid JSON.'));
+				loading = false;
+				return;
+			}
+		} else {
+			if (info.meta.__api_override__) {
+				delete info.meta.__api_override__;
+			}
+		}
+
 		info.params.system = system.trim() === '' ? null : system;
 		info.params.stop = params.stop
 			? (typeof params.stop === 'string' ? params.stop.split(',') : params.stop).filter((s) =>
@@ -464,6 +482,10 @@
 			builtinTools = model?.meta?.builtinTools ?? builtinTools;
 			terminalId = model?.meta?.terminalId ?? '';
 			tts = { voice: model?.meta?.tts?.voice ?? '' };
+			// [PT-EE0E] Let `__api_override__` in model metadata override API request fields.
+			apiOverride = model?.meta?.__api_override__
+				? JSON.stringify(model.meta.__api_override__, null, 2)
+				: '';
 
 			accessGrants = model?.access_grants ?? [];
 
@@ -986,6 +1008,21 @@
 								bind:value={tts.voice}
 								{voices}
 								placeholder={$i18n.t('e.g. alloy, echo, shimmer')}
+							/>
+						</div>
+
+						<!-- [PT-EE0E] Let `__api_override__` in model metadata override API request fields. -->
+						<div class="my-3">
+							<div class="flex w-full justify-between mb-1">
+								<div class="self-center text-xs font-normal text-gray-500">
+									{$i18n.t('API Override')}
+								</div>
+							</div>
+							<textarea
+								class="w-full text-sm bg-transparent outline-hidden resize-none font-mono"
+								rows="4"
+								bind:value={apiOverride}
+								placeholder={'{"reasoning": {"effort": "medium"}}'}
 							/>
 						</div>
 

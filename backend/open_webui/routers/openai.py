@@ -1185,6 +1185,16 @@ async def generate_chat_completion(
 
     is_responses = api_config.get('api_type') == 'responses'
 
+    # [PT-FA50] Let `__api_type__` in model metadata override the API type (Chat Completions or Responses API).
+    # Stored in model meta as "__api_type__": "responses" or "chat_completions".
+    # Overrides the connection-level api_type setting.
+    if model_info and model_info.meta:
+        model_api_type = model_info.meta.model_dump().get('__api_type__')
+        if model_api_type == 'responses':
+            is_responses = True
+        elif model_api_type == 'chat_completions':
+            is_responses = False
+
     if api_config.get('azure') or api_config.get('provider') == 'azure':
         # Only set api-key header if not using Azure Entra ID authentication
         auth_type = api_config.get('auth_type', 'bearer')

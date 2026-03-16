@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "skills": {
+    "patch-software": {
+      "source": "zetavg/agent-skills",
+      "sourceType": "github",
+      "computedHash": "43d2eab2f6c73b3758467204a03abb23ec5ab4c2528bcf544f17bc81e3f60429"
+    }
+  }
+}

@@ -1367,7 +1367,7 @@
 
 				currentChatPage.set(1);
 				// [PT-67C8] Add persistent unread indicators for chat conversations.
-        // await chats.set(await getChatList(localStorage.token, $currentChatPage));
+				// await chats.set(await getChatList(localStorage.token, $currentChatPage));
 				// Final completion saves can race with the active-chat unread clear.
 				await chats.set(keepVisibleChatRead(await getChatList(localStorage.token, $currentChatPage)));
 			}
@@ -2598,7 +2598,7 @@
 				});
 				currentChatPage.set(1);
 				// [PT-67C8] Add persistent unread indicators for chat conversations.
-        // await chats.set(await getChatList(localStorage.token, $currentChatPage));
+				// await chats.set(await getChatList(localStorage.token, $currentChatPage));
 				// Saving the visible chat during generation should not resurrect a transient unread mark.
 				await chats.set(keepVisibleChatRead(await getChatList(localStorage.token, $currentChatPage)));
 			}

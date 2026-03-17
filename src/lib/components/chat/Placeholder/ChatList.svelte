@@ -153,8 +153,19 @@
 				href={`/c/${chat.id}`}
 				on:click={() => (show = false)}
 			>
-				<div class="text-ellipsis line-clamp-1 w-full sm:basis-3/5">
-					{chat?.title}
+				<!-- [PT-67C8] Add persistent unread indicators for chat conversations. -->
+				<!-- <div class="text-ellipsis line-clamp-1 w-full sm:basis-3/5">
+					{chat?.title} -->
+				<!-- Folder placeholder rows already receive __is_unread__ from the folder list API, so render the same compact blue dot here as in the sidebar. -->
+				<div class="flex items-center gap-2 w-full sm:basis-3/5 min-w-0">
+					<div
+						aria-hidden="true"
+						class="shrink-0 size-1.5 rounded-full bg-blue-500"
+						class:invisible={!chat?.__is_unread__}
+					/>
+					<div class="text-ellipsis line-clamp-1 min-w-0">
+						{chat?.title}
+					</div>
 				</div>
 
 				<div class="hidden sm:flex sm:basis-2/5 items-center justify-end">

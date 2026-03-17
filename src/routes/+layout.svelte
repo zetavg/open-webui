@@ -460,7 +460,7 @@
 		}
 
 		let isFocused = document.visibilityState !== 'visible';
-    // [PT-67C8] Add persistent unread indicators for chat conversations.
+		// [PT-67C8] Add persistent unread indicators for chat conversations.
 		let electronWindowFocused = null;
 		if (window.electronAPI) {
 			const res = await window.electronAPI.send({
@@ -862,7 +862,7 @@
 
 				// Check token expiry when the tab becomes active
 				checkTokenExpiry();
-        // [PT-67C8] Add persistent unread indicators for chat conversations.
+				// [PT-67C8] Add persistent unread indicators for chat conversations.
 				clearActiveChatUnreadStatus();
 			}
 		};
@@ -878,7 +878,7 @@
 
 		// Add event listener for visibility state changes
 		document.addEventListener('visibilitychange', handleVisibilityChange);
-    // [PT-67C8] Add persistent unread indicators for chat conversations.
+		// [PT-67C8] Add persistent unread indicators for chat conversations.
 		window.addEventListener('focus', handleWindowFocus);
 
 		// Call visibility change handler initially to set state on load
@@ -1038,7 +1038,7 @@
 			document.removeEventListener('touchmove', touchmoveHandler);
 			document.removeEventListener('touchend', touchendHandler);
 			document.removeEventListener('visibilitychange', handleVisibilityChange);
-      // [PT-67C8] Add persistent unread indicators for chat conversations.
+			// [PT-67C8] Add persistent unread indicators for chat conversations.
 			window.removeEventListener('focus', handleWindowFocus);
 		};
 	});

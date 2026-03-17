@@ -46,7 +46,7 @@
 	export let onClose: Function;
 
 	export let chatId = '';
-  // [PT-67C8] Add persistent unread indicators for chat conversations.
+	// [PT-67C8] Add persistent unread indicators for chat conversations.
 	export let __is_unread__ = false;
 
 	let show = false;
@@ -64,7 +64,7 @@
 		pinned = await getChatPinnedStatusById(localStorage.token, chatId);
 	};
 
-  // [PT-67C8] Add persistent unread indicators for chat conversations.
+	// [PT-67C8] Add persistent unread indicators for chat conversations.
 	const unreadHandler = async () => {
 		// Let the dedicated unread API drive manual read/unread so the same socket event
 		// path updates every device and every sidebar section consistently.
@@ -406,7 +406,7 @@
 				{/if}
 			</DropdownMenu.Item>
 
-      <!-- [PT-67C8] Add persistent unread indicators for chat conversations. -->
+			<!-- [PT-67C8] Add persistent unread indicators for chat conversations. -->
 			<DropdownMenu.Item
 				draggable="false"
 				class="flex gap-2 items-center px-3 py-1.5 text-sm  cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl"

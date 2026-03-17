@@ -551,9 +551,9 @@
 				}
 				return newSet;
 			});
-    // [PT-67C8] Add persistent unread indicators for chat conversations.
-	  // Keep folder refresh handling next to folderRegistry so open folder branches can
-	  // refetch their local chat lists when another device changes unread state.
+			// [PT-67C8] Add persistent unread indicators for chat conversations.
+			// Keep folder refresh handling next to folderRegistry so open folder branches can
+			// refetch their local chat lists when another device changes unread state.
 		} else if (event.data?.type === 'chat:__unread__') {
 			const folderId = event.data?.data?.__folder_id__ ?? null;
 			if (folderId) {

@@ -11,7 +11,10 @@ import pycrdt as Y
 
 from open_webui.models.users import Users, UserNameResponse
 from open_webui.models.channels import Channels
-from open_webui.models.chats import Chats
+from open_webui.models.chats import (
+    Chats,
+    CHAT_UNREAD_COMPLETION_ORIGIN, # [PT-67C8]
+)
 from open_webui.models.notes import Notes, NoteUpdateForm
 from open_webui.utils.redis import (
     get_sentinels_from_env,
@@ -898,6 +901,37 @@ def get_event_emitter(request_info, update_db=True):
                             "sources": sources,
                         },
                     )
+
+            # [PT-67C8] Add persistent unread indicators for chat conversations.
+            elif event_type == "chat:completion":
+                # Handle completion-driven unread centrally here so every backend path that
+                # emits a finished chat completion gets the same cross-device unread update.
+                completion_data = event_data.get("data", {})
+                if completion_data.get("done"):
+                    unread_state = await asyncio.to_thread(
+                        Chats.update_chat_unread_status_by_id_and_user_id,
+                        request_info["chat_id"],
+                        user_id,
+                        True,
+                    )
+
+                    if unread_state and unread_state.get("changed"):
+                        await sio.emit(
+                            "events",
+                            {
+                                "chat_id": chat_id,
+                                "message_id": None,
+                                "data": {
+                                    "type": "chat:__unread__",
+                                    "data": {
+                                        "__is_unread__": unread_state["unread"],
+                                        "__folder_id__": unread_state["folder_id"],
+                                        "__origin__": CHAT_UNREAD_COMPLETION_ORIGIN,
+                                    },
+                                },
+                            },
+                            room=f"user:{user_id}",
+                        )
 
     if (
         "user_id" in request_info

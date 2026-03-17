@@ -551,6 +551,14 @@
 				}
 				return newSet;
 			});
+    // [PT-67C8] Add persistent unread indicators for chat conversations.
+	  // Keep folder refresh handling next to folderRegistry so open folder branches can
+	  // refetch their local chat lists when another device changes unread state.
+		} else if (event.data?.type === 'chat:__unread__') {
+			const folderId = event.data?.data?.__folder_id__ ?? null;
+			if (folderId) {
+				folderRegistry[folderId]?.setFolderItems();
+			}
 		}
 	};
 
@@ -1275,11 +1283,14 @@
 										class="ml-3 pl-1 mt-[1px] flex flex-col overflow-y-auto scrollbar-hidden border-s border-gray-100 dark:border-gray-900 text-gray-900 dark:text-gray-200"
 									>
 										{#each $pinnedChats as chat, idx (`pinned-chat-${chat?.id ?? idx}`)}
+											<!-- [PT-67C8] Add persistent unread indicators for chat conversations. -->
+											<!-- Pass unread (__is_unread__) straight through to the shared item so pinned chats mirror the main list. -->
 											<ChatItem
 												className=""
 												id={chat.id}
 												title={chat.title}
 												createdAt={chat.created_at}
+												__is_unread__={chat.__is_unread__ ?? false}
 												{shiftKey}
 												selected={selectedChatId === chat.id}
 												on:select={() => {
@@ -1336,11 +1347,14 @@
 										</div>
 									{/if}
 
+									<!-- [PT-67C8] Add persistent unread indicators for chat conversations. -->
+									<!-- Pass unread (__is_unread__) through the main chat list so the shared row component can render the blue dot. -->
 									<ChatItem
 										className=""
 										id={chat.id}
 										title={chat.title}
 										createdAt={chat.created_at}
+										__is_unread__={chat.__is_unread__ ?? false}
 										{shiftKey}
 										selected={selectedChatId === chat.id}
 										on:select={() => {

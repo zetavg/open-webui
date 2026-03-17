@@ -50,6 +50,7 @@
 	export let id;
 	export let title;
 	export let createdAt: number | null = null;
+	export let __is_unread__ = false; // [PT-67C8] Add persistent unread indicators for chat conversations.
 
 	export let selected = false;
 	export let shiftKey = false;
@@ -459,8 +460,14 @@
 				</div>
 			</div>
 
-			<!-- Time ago indicator -->
-			{#if createdAt && !mouseOver}
+			<!-- [PT-67C8] Add persistent unread indicators for chat conversations. -->
+      <!-- {#if createdAt && !mouseOver} -->
+			<!-- Give unread chats a compact right-edge marker without changing the shared title layout. -->
+			{#if __is_unread__ && !mouseOver}
+				<div class="shrink-0 self-center pl-2 pr-0.5">
+					<div class="size-1.5 rounded-full bg-blue-500" />
+				</div>
+			{:else if createdAt && !mouseOver}
 				<div class="shrink-0 self-center text-[10px] text-gray-400 dark:text-gray-500 pl-2">
 					{formatTimeAgo(createdAt)}
 				</div>
@@ -534,8 +541,11 @@
 			</div>
 		{:else}
 			<div class="flex self-center z-10 items-end">
+        <!-- [PT-67C8] Add persistent unread indicators for chat conversations. -->
+        <!-- Pass unread (__is_unread__) to the menu so it can conditionally render options or indicators based on the chat's unread state. -->
 				<ChatMenu
 					chatId={id}
+					{__is_unread__}
 					cloneChatHandler={() => {
 						cloneChatHandler(id);
 					}}

@@ -22,6 +22,7 @@ from open_webui.models.chats import (
     ChatBody,
     ChatHistoryStats,
     MessageStats,
+    CHAT_UNREAD_API_ORIGIN, # [PT-67C8]
 )
 from open_webui.models.tags import TagModel, Tags
 from open_webui.models.folders import Folders
@@ -30,7 +31,7 @@ from open_webui.internal.db import get_session
 from open_webui.config import ENABLE_ADMIN_CHAT_ACCESS, ENABLE_ADMIN_EXPORT
 from open_webui.constants import ERROR_MESSAGES
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, Field # [PT-67C8]
 
 
 from open_webui.utils.auth import get_admin_user, get_verified_user
@@ -39,6 +40,54 @@ from open_webui.utils.access_control import has_permission
 log = logging.getLogger(__name__)
 
 router = APIRouter()
+
+
+# [PT-67C8] Add persistent unread indicators for chat conversations.
+# Centralize the unread socket payload so explicit API writes and completion-driven writes
+# fan out the same event shape to every connected device.
+async def emit_chat_unread_event(
+    user_id: str,
+    chat_id: str,
+    unread: bool,
+    folder_id: Optional[str],
+    origin: str,
+):
+    event_emitter = get_event_emitter(
+        {
+            "user_id": user_id,
+            "chat_id": chat_id,
+            "message_id": None,
+        },
+        update_db=False,
+    )
+
+    if event_emitter:
+        await event_emitter(
+            {
+                "type": "chat:__unread__",
+                "data": {
+                    "__is_unread__": unread,
+                    "__folder_id__": folder_id,
+                    "__origin__": origin,
+                },
+            }
+        )
+
+
+# [PT-67C8] Add persistent unread indicators for chat conversations.
+# Keep the API field names namespaced while still using normal Python attribute names
+# internally so FastAPI and Pydantic remain easy to work with.
+class ChatUnreadStatusForm(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    unread: bool = Field(alias="__is_unread__")
+
+
+class ChatUnreadStatusResponse(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    id: str
+    unread: bool = Field(alias="__is_unread__")
 
 ############################
 # GetChatList
@@ -689,7 +738,9 @@ async def get_chats_by_folder_id(
     ]
 
 
-@router.get("/folder/{folder_id}/list")
+# [PT-67C8] Add persistent unread indicators for chat conversations.
+# @router.get("/folder/{folder_id}/list")
+@router.get("/folder/{folder_id}/list", response_model=list[ChatTitleIdResponse])
 async def get_chat_list_by_folder_id(
     folder_id: str,
     page: Optional[int] = 1,
@@ -701,7 +752,17 @@ async def get_chat_list_by_folder_id(
         skip = (page - 1) * limit
 
         return [
-            {"title": chat.title, "id": chat.id, "updated_at": chat.updated_at}
+            # [PT-67C8] Add persistent unread indicators for chat conversations.
+            # {"title": chat.title, "id": chat.id, "updated_at": chat.updated_at}
+            # Normalize folder chat rows to the same lightweight shape as the main sidebar
+            # so the shared ChatItem component can render unread dots consistently.
+            ChatTitleIdResponse(
+                id=chat.id,
+                title=chat.title,
+                updated_at=chat.updated_at,
+                created_at=chat.created_at,
+                unread=chat.unread,
+            )
             for chat in Chats.get_chats_by_folder_id_and_user_id(
                 folder_id, user.id, skip=skip, limit=limit, db=db
             )
@@ -1179,6 +1240,41 @@ async def pin_chat_by_id(
     if chat:
         chat = Chats.toggle_chat_pinned_by_id(id, db=db)
         return chat
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail=ERROR_MESSAGES.DEFAULT()
+        )
+
+# [PT-67C8] Add persistent unread indicators for chat conversations.
+############################
+# UpdateChatUnreadById
+############################
+
+
+@router.post("/{id}/__unread__", response_model=ChatUnreadStatusResponse)
+async def update_chat_unread_status_by_id(
+    id: str,
+    form_data: ChatUnreadStatusForm,
+    user=Depends(get_verified_user),
+    db: Session = Depends(get_session),
+):
+    # [PT-67C8] Add persistent unread indicators for chat conversations.
+    # Use a dedicated unread endpoint so the UI can flip unread state without touching
+    # updated_at and accidentally reordering the sidebar.
+    unread_state = Chats.update_chat_unread_status_by_id_and_user_id(
+        id, user.id, form_data.unread, db=db
+    )
+    if unread_state:
+        if unread_state["changed"]:
+            await emit_chat_unread_event(
+                user.id,
+                id,
+                unread_state["unread"],
+                unread_state["folder_id"],
+                CHAT_UNREAD_API_ORIGIN,
+            )
+
+        return ChatUnreadStatusResponse(id=id, unread=unread_state["unread"])
     else:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail=ERROR_MESSAGES.DEFAULT()

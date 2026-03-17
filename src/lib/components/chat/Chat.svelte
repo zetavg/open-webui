@@ -72,6 +72,7 @@
 		getChatList,
 		getPinnedChatList,
 		getTagsById,
+		updateChatUnreadStatusById, // [PT-67C8] Add persistent unread indicators for chat conversations.
 		updateChatById,
 		updateChatFolderIdById
 	} from '$lib/apis/chats';
@@ -1252,6 +1253,13 @@
 				if (taskRes) {
 					taskIds = taskRes.task_ids;
 				}
+
+				// [PT-67C8] Add persistent unread indicators for chat conversations.
+				// Mark the chat as read only after its data loads successfully so a failed
+				// navigation does not clear unread state for another device.
+				void updateChatUnreadStatusById(localStorage.token, $chatId, false).catch((error) => {
+					console.error('Failed to clear unread chat state after load:', error);
+				});
 
 				await tick();
 

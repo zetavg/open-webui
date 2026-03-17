@@ -419,6 +419,27 @@
 		}
 	};
 
+	// [PT-67C8] Add persistent unread indicators for chat conversations.
+	// Preserve the read state for the current visible chat only in reply-driven list
+	// refreshes that can race with the unread-clear API round-trip.
+	const keepVisibleChatRead = (chatList) => {
+		if (!chatList || !$chatId) {
+			return chatList;
+		}
+
+		if (document.visibilityState !== 'visible' || !document.hasFocus()) {
+			return chatList;
+		}
+
+		if (!$page.url.pathname.includes(`/c/${$chatId}`)) {
+			return chatList;
+		}
+
+		return chatList.map((chat) =>
+			chat.id === $chatId ? { ...chat, __is_unread__: false } : chat
+		);
+	};
+
 	const chatEventHandler = async (event, cb) => {
 		console.log(event);
 
@@ -476,7 +497,9 @@
 				} else if (type === 'chat:title') {
 					chatTitle.set(data);
 					currentChatPage.set(1);
-					await chats.set(await getChatList(localStorage.token, $currentChatPage));
+					// [PT-67C8] Add persistent unread indicators for chat conversations.
+					// Title refreshes can land before the active-chat unread clear reaches the backend.
+					await chats.set(keepVisibleChatRead(await getChatList(localStorage.token, $currentChatPage)));
 				} else if (type === 'chat:tags') {
 					chat = await getChatById(localStorage.token, $chatId);
 					allTags.set(await getAllTags(localStorage.token));
@@ -1343,7 +1366,10 @@
 				});
 
 				currentChatPage.set(1);
-				await chats.set(await getChatList(localStorage.token, $currentChatPage));
+				// [PT-67C8] Add persistent unread indicators for chat conversations.
+        // await chats.set(await getChatList(localStorage.token, $currentChatPage));
+				// Final completion saves can race with the active-chat unread clear.
+				await chats.set(keepVisibleChatRead(await getChatList(localStorage.token, $currentChatPage)));
 			}
 		}
 
@@ -1410,7 +1436,9 @@
 				});
 
 				currentChatPage.set(1);
-				await chats.set(await getChatList(localStorage.token, $currentChatPage));
+				// [PT-67C8] Add persistent unread indicators for chat conversations.
+				// Action-triggered refreshes share the same reply/update race as completions.
+				await chats.set(keepVisibleChatRead(await getChatList(localStorage.token, $currentChatPage)));
 			}
 		}
 	};
@@ -2569,7 +2597,10 @@
 					files: chatFiles
 				});
 				currentChatPage.set(1);
-				await chats.set(await getChatList(localStorage.token, $currentChatPage));
+				// [PT-67C8] Add persistent unread indicators for chat conversations.
+        // await chats.set(await getChatList(localStorage.token, $currentChatPage));
+				// Saving the visible chat during generation should not resurrect a transient unread mark.
+				await chats.set(keepVisibleChatRead(await getChatList(localStorage.token, $currentChatPage)));
 			}
 		}
 	};

@@ -445,7 +445,11 @@
 	};
 
 	const chatEventHandler = async (event, cb) => {
-		const chat = $page.url.pathname.includes(`/c/${event.chat_id}`);
+		// [PT-67C8] Add persistent unread indicators for chat conversations.
+		// Prefer the chat store for current-chat detection so a newly created chat is
+		// treated as active immediately, even if the URL has not fully caught up yet.
+		const isCurrentChat =
+			event.chat_id === $chatId || $page.url.pathname.includes(`/c/${event.chat_id}`);
 
 		// Skip events from temporary chats that are not the current chat.
 		// This prevents notifications from being sent to other tabs/devices
@@ -463,7 +467,7 @@
 				type: 'window:isFocused'
 			});
 			if (res) {
-        // [PT-67C8] Add persistent unread indicators for chat conversations.
+				// [PT-67C8] Add persistent unread indicators for chat conversations.
 				electronWindowFocused = res.isFocused;
 				isFocused = res.isFocused;
 			}
@@ -473,21 +477,29 @@
 		const type = event?.data?.type ?? null;
 		const data = event?.data?.data ?? null;
 		// [PT-67C8] Add persistent unread indicators for chat conversations.
-    const isActivelyViewingChat =
-			chat &&
+		const isActivelyViewingChat =
+			isCurrentChat &&
 			document.visibilityState === 'visible' &&
 			(electronWindowFocused === null || electronWindowFocused);
 
-    // [PT-67C8] Add persistent unread indicators for chat conversations.
+		// [PT-67C8] Add persistent unread indicators for chat conversations.
 		if (type === 'chat:__unread__') {
+			const shouldKeepUnreadCleared =
+				Boolean(data?.__is_unread__) &&
+				data?.__origin__ === '__completion__' &&
+				isActivelyViewingChat;
+
 			// Apply unread updates to the sidebar stores immediately so other devices see the
 			// blue dot change without waiting for a full list reload.
-			syncChatUnreadStatus(event.chat_id, data?.__is_unread__ ?? false);
+			syncChatUnreadStatus(
+				event.chat_id,
+				shouldKeepUnreadCleared ? false : (data?.__is_unread__ ?? false)
+			);
 
 			// [PT-67C8] Add persistent unread indicators for chat conversations.
 			// Only auto-clear unread when the server marked it unread because a completion
 			// finished and the user is actively watching that exact chat right now.
-			if (data?.__is_unread__ && data?.__origin__ === '__completion__' && isActivelyViewingChat) {
+			if (shouldKeepUnreadCleared) {
 				void updateChatUnreadStatusById(localStorage.token, event.chat_id, false).catch((error) => {
 					console.error('Failed to clear unread chat state after active completion:', error);
 				});

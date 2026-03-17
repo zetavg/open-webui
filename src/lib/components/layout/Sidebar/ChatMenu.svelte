@@ -2,6 +2,7 @@
 	import { DropdownMenu } from 'bits-ui';
 	import { flyAndScale } from '$lib/utils/transitions';
 	import { getContext, createEventDispatcher, tick } from 'svelte';
+	import { toast } from 'svelte-sonner'; // [PT-67C8] Add persistent unread indicators for chat conversations.
 
 	import fileSaver from 'file-saver';
 	const { saveAs } = fileSaver;

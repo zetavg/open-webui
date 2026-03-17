@@ -427,6 +427,23 @@
 		pinnedChats.update((chatList) => updateChatListUnreadStatus(chatList, eventChatId, unread));
 	};
 
+	// [PT-67C8] Add persistent unread indicators for chat conversations.
+	// If a completion arrives while this tab or window is inactive, clear unread once
+	// the user returns to the same already-open chat instead of leaving the dot stuck.
+	const clearActiveChatUnreadStatus = () => {
+		if (!localStorage.token || !$chatId || $chatId.startsWith('local:')) {
+			return;
+		}
+
+		if (!$page.url.pathname.includes(`/c/${$chatId}`)) {
+			return;
+		}
+
+		void updateChatUnreadStatusById(localStorage.token, $chatId, false).catch((error) => {
+			console.error('Failed to clear unread chat state after returning to active chat:', error);
+		});
+	};
+
 	const chatEventHandler = async (event, cb) => {
 		const chat = $page.url.pathname.includes(`/c/${event.chat_id}`);
 
@@ -833,11 +850,24 @@
 
 				// Check token expiry when the tab becomes active
 				checkTokenExpiry();
+        // [PT-67C8] Add persistent unread indicators for chat conversations.
+				clearActiveChatUnreadStatus();
+			}
+		};
+
+		// [PT-67C8] Add persistent unread indicators for chat conversations.
+		// Electron and desktop browsers can restore window focus without a visibility
+		// transition, so clear unread here as well for an already-open active chat.
+		const handleWindowFocus = () => {
+			if (document.visibilityState === 'visible') {
+				clearActiveChatUnreadStatus();
 			}
 		};
 
 		// Add event listener for visibility state changes
 		document.addEventListener('visibilitychange', handleVisibilityChange);
+    // [PT-67C8] Add persistent unread indicators for chat conversations.
+		window.addEventListener('focus', handleWindowFocus);
 
 		// Call visibility change handler initially to set state on load
 		handleVisibilityChange();
@@ -996,6 +1026,8 @@
 			document.removeEventListener('touchmove', touchmoveHandler);
 			document.removeEventListener('touchend', touchendHandler);
 			document.removeEventListener('visibilitychange', handleVisibilityChange);
+      // [PT-67C8] Add persistent unread indicators for chat conversations.
+			window.removeEventListener('focus', handleWindowFocus);
 		};
 	});
 

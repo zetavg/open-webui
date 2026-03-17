@@ -306,6 +306,12 @@ class ChatTable:
             }
         )
 
+    # [PT-67C8] Add persistent unread indicators for chat conversations.
+    # Keep derived unread fields out of ORM writes so lightweight response data does
+    # not leak into create/import/share paths that instantiate Chat rows.
+    def _chat_model_to_db_payload(self, chat: ChatModel) -> dict:
+        return chat.model_dump(exclude={"unread"})
+
     def _clean_null_bytes(self, obj):
         """Recursively remove null bytes from strings in dict/list structures."""
         return sanitize_data_for_db(obj)
@@ -354,7 +360,11 @@ class ChatTable:
                 }
             )
 
-            chat_item = Chat(**chat.model_dump())
+            # [PT-67C8] Add persistent unread indicators for chat conversations.
+            # chat_item = Chat(**chat.model_dump())
+            # Serialize ChatModel through the DB payload helper so unread stays a
+            # read-only response concern instead of becoming an ORM constructor arg.
+            chat_item = Chat(**self._chat_model_to_db_payload(chat))
             db.add(chat_item)
             db.commit()
             db.refresh(chat_item)
@@ -414,7 +424,11 @@ class ChatTable:
 
             for form_data in chat_import_forms:
                 chat = self._chat_import_form_to_chat_model(user_id, form_data)
-                chats.append(Chat(**chat.model_dump()))
+                # [PT-67C8] Add persistent unread indicators for chat conversations.
+                # chats.append(Chat(**chat.model_dump()))
+                # Keep import writes aligned with create/share writes by excluding
+                # derived unread fields from the ORM constructor payload.
+                chats.append(Chat(**self._chat_model_to_db_payload(chat)))
 
             db.add_all(chats)
             db.commit()
@@ -627,7 +641,11 @@ class ChatTable:
                     "updated_at": int(time.time()),
                 }
             )
-            shared_result = Chat(**shared_chat.model_dump())
+            # [PT-67C8] Add persistent unread indicators for chat conversations.
+            # shared_result = Chat(**shared_chat.model_dump())
+            # Shared chat copies should persist only real Chat columns, not derived
+            # unread response fields that exist purely for lightweight lists.
+            shared_result = Chat(**self._chat_model_to_db_payload(shared_chat))
             db.add(shared_result)
             db.commit()
             db.refresh(shared_result)
@@ -1414,6 +1432,34 @@ class ChatTable:
 
             all_chats = query.all()
             return [ChatModel.model_validate(chat) for chat in all_chats]
+
+    # [PT-67C8] Add persistent unread indicators for chat conversations.
+    # Folder sidebar refreshes only need title/id/timestamps/unread, so mirror the
+    # lightweight projection used by the main, pinned, and archived chat lists.
+    def get_chat_title_id_list_by_folder_id_and_user_id(
+        self,
+        folder_id: str,
+        user_id: str,
+        skip: int = 0,
+        limit: int = 60,
+        db: Optional[Session] = None,
+    ) -> list[ChatTitleIdResponse]:
+        with get_db_context(db) as db:
+            query = db.query(Chat).filter_by(folder_id=folder_id, user_id=user_id)
+            query = query.filter(or_(Chat.pinned == False, Chat.pinned == None))
+            query = query.filter_by(archived=False)
+
+            query = query.order_by(Chat.updated_at.desc(), Chat.id).with_entities(
+                Chat.id, Chat.title, Chat.updated_at, Chat.created_at, Chat.meta
+            )
+
+            if skip:
+                query = query.offset(skip)
+            if limit:
+                query = query.limit(limit)
+
+            all_chats = query.all()
+            return [self._chat_title_id_response_from_row(chat) for chat in all_chats]
 
     def get_chats_by_folder_ids_and_user_id(
         self, folder_ids: list[str], user_id: str, db: Optional[Session] = None

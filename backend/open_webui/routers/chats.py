@@ -751,22 +751,24 @@ async def get_chat_list_by_folder_id(
         limit = 10
         skip = (page - 1) * limit
 
-        return [
-            # [PT-67C8] Add persistent unread indicators for chat conversations.
-            # {"title": chat.title, "id": chat.id, "updated_at": chat.updated_at}
-            # Normalize folder chat rows to the same lightweight shape as the main sidebar
-            # so the shared ChatItem component can render unread dots consistently.
-            ChatTitleIdResponse(
-                id=chat.id,
-                title=chat.title,
-                updated_at=chat.updated_at,
-                created_at=chat.created_at,
-                unread=chat.unread,
-            )
-            for chat in Chats.get_chats_by_folder_id_and_user_id(
-                folder_id, user.id, skip=skip, limit=limit, db=db
-            )
-        ]
+        # [PT-67C8] Add persistent unread indicators for chat conversations.
+        # return [
+        #     ChatTitleIdResponse(
+        #         id=chat.id,
+        #         title=chat.title,
+        #         updated_at=chat.updated_at,
+        #         created_at=chat.created_at,
+        #         unread=chat.unread,
+        #     )
+        #     for chat in Chats.get_chats_by_folder_id_and_user_id(
+        #         folder_id, user.id, skip=skip, limit=limit, db=db
+        #     )
+        # ]
+        # Use the dedicated lightweight folder list query so unread refreshes do not
+        # need to hydrate full chat JSON for every open folder branch.
+        return Chats.get_chat_title_id_list_by_folder_id_and_user_id(
+            folder_id, user.id, skip=skip, limit=limit, db=db
+        )
 
     except Exception as e:
         log.exception(e)

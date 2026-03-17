@@ -13,7 +13,7 @@ from open_webui.models.users import Users, UserNameResponse
 from open_webui.models.channels import Channels
 from open_webui.models.chats import (
     Chats,
-    CHAT_UNREAD_COMPLETION_ORIGIN,
+    CHAT_UNREAD_COMPLETION_ORIGIN, # [PT-67C8]
 )
 from open_webui.models.notes import Notes, NoteUpdateForm
 from open_webui.utils.redis import (
@@ -902,8 +902,8 @@ def get_event_emitter(request_info, update_db=True):
                         },
                     )
 
+            # [PT-67C8] Add persistent unread indicators for chat conversations.
             elif event_type == "chat:completion":
-                # [PT-67C8] Add persistent unread indicators for chat conversations.
                 # Handle completion-driven unread centrally here so every backend path that
                 # emits a finished chat completion gets the same cross-device unread update.
                 completion_data = event_data.get("data", {})

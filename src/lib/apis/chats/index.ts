@@ -743,6 +743,7 @@ export const toggleChatPinnedStatusById = async (token: string, id: string) => {
 	return res;
 };
 
+// [PT-67C8] Add persistent unread indicators for chat conversations.
 export const updateChatUnreadStatusById = async (
 	token: string,
 	id: string,
@@ -750,7 +751,6 @@ export const updateChatUnreadStatusById = async (
 ) => {
 	let error = null;
 
-	// [PT-67C8] Add persistent unread indicators for chat conversations.
 	// Use a dedicated unread endpoint so the client can flip unread state without
 	// touching the general chat update flow that rewrites sidebar ordering.
 	const res = await fetch(`${WEBUI_API_BASE_URL}/chats/${id}/__unread__`, {

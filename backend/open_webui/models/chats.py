@@ -11,7 +11,7 @@ from open_webui.models.folders import Folders
 from open_webui.models.chat_messages import ChatMessage, ChatMessages
 from open_webui.utils.misc import sanitize_data_for_db, sanitize_text_for_db
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field # [PT-67C8]
 from sqlalchemy import (
     BigInteger,
     Boolean,
@@ -82,6 +82,8 @@ class Chat(Base):
 
 
 class ChatModel(BaseModel):
+    # [PT-67C8] Add persistent unread indicators for chat conversations.
+    # model_config = ConfigDict(from_attributes=True)
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
     id: str
@@ -98,6 +100,7 @@ class ChatModel(BaseModel):
 
     meta: dict = {}
     folder_id: Optional[str] = None
+    # [PT-67C8] Add persistent unread indicators for chat conversations.
     unread: bool = Field(default=False, alias=CHAT_UNREAD_META_KEY)
 
 
@@ -178,12 +181,14 @@ class ChatResponse(BaseModel):
 
 
 class ChatTitleIdResponse(BaseModel):
+    # [PT-67C8] Add persistent unread indicators for chat conversations.
     model_config = ConfigDict(populate_by_name=True)
 
     id: str
     title: str
     updated_at: int
     created_at: int
+    # [PT-67C8] Add persistent unread indicators for chat conversations.
     unread: bool = Field(default=False, alias=CHAT_UNREAD_META_KEY)
 
 
@@ -781,6 +786,9 @@ class ChatTable:
                 query = query.order_by(Chat.updated_at.desc(), Chat.id)
 
             # [PT-67C8] Add persistent unread indicators for chat conversations.
+            # query = query.with_entities(
+            #     Chat.id, Chat.title, Chat.updated_at, Chat.created_at
+            # )
             # Include meta in the lightweight projection so archived sidebar rows can
             # render unread dots without loading the full chat JSON payload.
             query = query.with_entities(
@@ -794,6 +802,17 @@ class ChatTable:
 
             all_chats = query.all()
             # [PT-67C8] Add persistent unread indicators for chat conversations.
+            # return [
+            #     ChatTitleIdResponse.model_validate(
+            #         {
+            #             "id": chat[0],
+            #             "title": chat[1],
+            #             "updated_at": chat[2],
+            #             "created_at": chat[3],
+            #         }
+            #     )
+            #     for chat in all_chats
+            # ]
             # Reuse the shared mapper so archived rows return the same unread-aware
             # payload shape as every other lightweight chat list.
             return [self._chat_title_id_response_from_row(chat) for chat in all_chats]
@@ -927,6 +946,9 @@ class ChatTable:
                 query = query.filter_by(archived=False)
 
             # [PT-67C8] Add persistent unread indicators for chat conversations.
+            # query = query.order_by(Chat.updated_at.desc(), Chat.id).with_entities(
+            #     Chat.id, Chat.title, Chat.updated_at, Chat.created_at
+            # )
             # Keep unread available in the main sidebar query while still avoiding the
             # heavy chat JSON column.
             query = query.order_by(Chat.updated_at.desc(), Chat.id).with_entities(
@@ -1137,6 +1159,7 @@ class ChatTable:
                 .filter_by(user_id=user_id, pinned=True, archived=False)
                 .order_by(Chat.updated_at.desc())
                 # [PT-67C8] Add persistent unread indicators for chat conversations.
+                # .with_entities(Chat.id, Chat.title, Chat.updated_at, Chat.created_at)
                 # Pinned chats need the same unread metadata as the main list so dots
                 # stay consistent when a conversation appears in both places.
                 .with_entities(
@@ -1144,6 +1167,17 @@ class ChatTable:
                 )
             )
             # [PT-67C8] Add persistent unread indicators for chat conversations.
+            # return [
+            #     ChatTitleIdResponse.model_validate(
+            #         {
+            #             "id": chat[0],
+            #             "title": chat[1],
+            #             "updated_at": chat[2],
+            #             "created_at": chat[3],
+            #         }
+            #     )
+            #     for chat in all_chats
+            # ]
             # Reuse the shared mapper so pinned rows serialize unread exactly like the
             # main and archived lists.
             return [self._chat_title_id_response_from_row(chat) for chat in all_chats]

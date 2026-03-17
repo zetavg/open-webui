@@ -72,7 +72,7 @@
 		getChatList,
 		getPinnedChatList,
 		getTagsById,
-		updateChatUnreadStatusById,
+		updateChatUnreadStatusById, // [PT-67C8] Add persistent unread indicators for chat conversations.
 		updateChatById,
 		updateChatFolderIdById
 	} from '$lib/apis/chats';

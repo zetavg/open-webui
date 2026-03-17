@@ -21,7 +21,7 @@
 		socket,
 		chatId,
 		chats,
-		pinnedChats,
+		pinnedChats, // [PT-67C8] Add persistent unread indicators for chat conversations.
 		currentChatPage,
 		tags,
 		temporaryChatEnabled,
@@ -52,7 +52,7 @@
 
 	import { executeToolServer, getBackendConfig, getVersion } from '$lib/apis';
 	import { getSessionUser, userSignOut } from '$lib/apis/auths';
-	import { getAllTags, getChatList, updateChatUnreadStatusById } from '$lib/apis/chats';
+	import { getAllTags, getChatList, updateChatUnreadStatusById /* [PT-67C8] */ } from '$lib/apis/chats';
 	import { chatCompletion } from '$lib/apis/openai';
 
 	import { WEBUI_API_BASE_URL, WEBUI_BASE_URL, WEBUI_HOSTNAME } from '$lib/constants';
@@ -439,12 +439,14 @@
 		}
 
 		let isFocused = document.visibilityState !== 'visible';
+    // [PT-67C8] Add persistent unread indicators for chat conversations.
 		let electronWindowFocused = null;
 		if (window.electronAPI) {
 			const res = await window.electronAPI.send({
 				type: 'window:isFocused'
 			});
 			if (res) {
+        // [PT-67C8] Add persistent unread indicators for chat conversations.
 				electronWindowFocused = res.isFocused;
 				isFocused = res.isFocused;
 			}
@@ -453,13 +455,14 @@
 		await tick();
 		const type = event?.data?.type ?? null;
 		const data = event?.data?.data ?? null;
-		const isActivelyViewingChat =
+		// [PT-67C8] Add persistent unread indicators for chat conversations.
+    const isActivelyViewingChat =
 			chat &&
 			document.visibilityState === 'visible' &&
 			(electronWindowFocused === null || electronWindowFocused);
 
+    // [PT-67C8] Add persistent unread indicators for chat conversations.
 		if (type === 'chat:__unread__') {
-			// [PT-67C8] Add persistent unread indicators for chat conversations.
 			// Apply unread updates to the sidebar stores immediately so other devices see the
 			// blue dot change without waiting for a full list reload.
 			syncChatUnreadStatus(event.chat_id, data?.__is_unread__ ?? false);

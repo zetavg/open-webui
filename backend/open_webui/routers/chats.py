@@ -22,7 +22,7 @@ from open_webui.models.chats import (
     ChatBody,
     ChatHistoryStats,
     MessageStats,
-    CHAT_UNREAD_API_ORIGIN,
+    CHAT_UNREAD_API_ORIGIN, # [PT-67C8]
 )
 from open_webui.models.tags import TagModel, Tags
 from open_webui.models.folders import Folders
@@ -31,7 +31,7 @@ from open_webui.internal.db import get_session
 from open_webui.config import ENABLE_ADMIN_CHAT_ACCESS, ENABLE_ADMIN_EXPORT
 from open_webui.constants import ERROR_MESSAGES
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field # [PT-67C8]
 
 
 from open_webui.utils.auth import get_admin_user, get_verified_user
@@ -738,6 +738,8 @@ async def get_chats_by_folder_id(
     ]
 
 
+# [PT-67C8] Add persistent unread indicators for chat conversations.
+# @router.get("/folder/{folder_id}/list")
 @router.get("/folder/{folder_id}/list", response_model=list[ChatTitleIdResponse])
 async def get_chat_list_by_folder_id(
     folder_id: str,
@@ -749,10 +751,11 @@ async def get_chat_list_by_folder_id(
         limit = 10
         skip = (page - 1) * limit
 
-        # [PT-67C8] Add persistent unread indicators for chat conversations.
-        # Normalize folder chat rows to the same lightweight shape as the main sidebar
-        # so the shared ChatItem component can render unread dots consistently.
         return [
+            # [PT-67C8] Add persistent unread indicators for chat conversations.
+            # {"title": chat.title, "id": chat.id, "updated_at": chat.updated_at}
+            # Normalize folder chat rows to the same lightweight shape as the main sidebar
+            # so the shared ChatItem component can render unread dots consistently.
             ChatTitleIdResponse(
                 id=chat.id,
                 title=chat.title,
@@ -1242,7 +1245,7 @@ async def pin_chat_by_id(
             status_code=status.HTTP_401_UNAUTHORIZED, detail=ERROR_MESSAGES.DEFAULT()
         )
 
-
+# [PT-67C8] Add persistent unread indicators for chat conversations.
 ############################
 # UpdateChatUnreadById
 ############################

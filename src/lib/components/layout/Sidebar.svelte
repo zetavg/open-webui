@@ -534,9 +534,7 @@
 		};
 	});
 
-	// [PT-67C8] Add persistent unread indicators for chat conversations.
-	// Keep folder refresh handling next to folderRegistry so open folder branches can
-	// refetch their local chat lists when another device changes unread state.
+	// Handler for chat:active events (defined outside onMount for proper cleanup)
 	const chatActiveEventHandler = (event: {
 		chat_id: string;
 		message_id: string;
@@ -553,6 +551,9 @@
 				}
 				return newSet;
 			});
+    // [PT-67C8] Add persistent unread indicators for chat conversations.
+	  // Keep folder refresh handling next to folderRegistry so open folder branches can
+	  // refetch their local chat lists when another device changes unread state.
 		} else if (event.data?.type === 'chat:__unread__') {
 			const folderId = event.data?.data?.__folder_id__ ?? null;
 			if (folderId) {
@@ -1283,7 +1284,7 @@
 									>
 										{#each $pinnedChats as chat, idx (`pinned-chat-${chat?.id ?? idx}`)}
 											<!-- [PT-67C8] Add persistent unread indicators for chat conversations. -->
-											<!-- Pass unread straight through to the shared item so pinned chats mirror the main list. -->
+											<!-- Pass unread (__is_unread__) straight through to the shared item so pinned chats mirror the main list. -->
 											<ChatItem
 												className=""
 												id={chat.id}
@@ -1347,7 +1348,7 @@
 									{/if}
 
 									<!-- [PT-67C8] Add persistent unread indicators for chat conversations. -->
-									<!-- Pass unread through the main chat list so the shared row component can render the blue dot. -->
+									<!-- Pass unread (__is_unread__) through the main chat list so the shared row component can render the blue dot. -->
 									<ChatItem
 										className=""
 										id={chat.id}

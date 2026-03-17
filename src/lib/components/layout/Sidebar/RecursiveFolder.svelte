@@ -679,7 +679,7 @@
 
 					{#each chats ?? [] as chat (chat.id)}
 						<!-- [PT-67C8] Add persistent unread indicators for chat conversations. -->
-						<!-- Folder rows reuse ChatItem, so forward unread here to keep folder and main sidebar sections aligned. -->
+						<!-- Folder rows reuse ChatItem, so forward unread (__is_unread__) here to keep folder and main sidebar sections aligned. -->
 						<ChatItem
 							id={chat.id}
 							title={chat.title}

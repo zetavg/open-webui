@@ -21,6 +21,7 @@
 		socket,
 		chatId,
 		chats,
+		pinnedChats,
 		currentChatPage,
 		tags,
 		temporaryChatEnabled,
@@ -51,7 +52,7 @@
 
 	import { executeToolServer, getBackendConfig, getVersion } from '$lib/apis';
 	import { getSessionUser, userSignOut } from '$lib/apis/auths';
-	import { getAllTags, getChatList } from '$lib/apis/chats';
+	import { getAllTags, getChatList, updateChatUnreadStatusById } from '$lib/apis/chats';
 	import { chatCompletion } from '$lib/apis/openai';
 
 	import { WEBUI_API_BASE_URL, WEBUI_BASE_URL, WEBUI_HOSTNAME } from '$lib/constants';
@@ -405,6 +406,27 @@
 		}
 	};
 
+	// [PT-67C8] Add persistent unread indicators for chat conversations.
+	// Sidebar lists are store-backed, so patch unread state in place to avoid full
+	// list refetches whenever another device flips a chat between read and unread.
+	const updateChatListUnreadStatus = (chatList, eventChatId, unread) => {
+		if (!chatList) {
+			return chatList;
+		}
+
+		return chatList.map((chat) =>
+			chat.id === eventChatId ? { ...chat, __is_unread__: unread } : chat
+		);
+	};
+
+	// [PT-67C8] Add persistent unread indicators for chat conversations.
+	// Keep the unread socket payload as the single source of truth for main and pinned
+	// sidebar sections so cross-device updates stay consistent without a full reload.
+	const syncChatUnreadStatus = (eventChatId, unread) => {
+		chats.update((chatList) => updateChatListUnreadStatus(chatList, eventChatId, unread));
+		pinnedChats.update((chatList) => updateChatListUnreadStatus(chatList, eventChatId, unread));
+	};
+
 	const chatEventHandler = async (event, cb) => {
 		const chat = $page.url.pathname.includes(`/c/${event.chat_id}`);
 
@@ -417,11 +439,13 @@
 		}
 
 		let isFocused = document.visibilityState !== 'visible';
+		let electronWindowFocused = null;
 		if (window.electronAPI) {
 			const res = await window.electronAPI.send({
 				type: 'window:isFocused'
 			});
 			if (res) {
+				electronWindowFocused = res.isFocused;
 				isFocused = res.isFocused;
 			}
 		}
@@ -429,6 +453,28 @@
 		await tick();
 		const type = event?.data?.type ?? null;
 		const data = event?.data?.data ?? null;
+		const isActivelyViewingChat =
+			chat &&
+			document.visibilityState === 'visible' &&
+			(electronWindowFocused === null || electronWindowFocused);
+
+		if (type === 'chat:__unread__') {
+			// [PT-67C8] Add persistent unread indicators for chat conversations.
+			// Apply unread updates to the sidebar stores immediately so other devices see the
+			// blue dot change without waiting for a full list reload.
+			syncChatUnreadStatus(event.chat_id, data?.__is_unread__ ?? false);
+
+			// [PT-67C8] Add persistent unread indicators for chat conversations.
+			// Only auto-clear unread when the server marked it unread because a completion
+			// finished and the user is actively watching that exact chat right now.
+			if (data?.__is_unread__ && data?.__origin__ === '__completion__' && isActivelyViewingChat) {
+				void updateChatUnreadStatusById(localStorage.token, event.chat_id, false).catch((error) => {
+					console.error('Failed to clear unread chat state after active completion:', error);
+				});
+			}
+
+			return;
+		}
 
 		if ((event.chat_id !== $chatId && !$temporaryChatEnabled) || isFocused) {
 			if (type === 'chat:completion') {

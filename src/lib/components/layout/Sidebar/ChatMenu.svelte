@@ -18,10 +18,13 @@
 	import DocumentDuplicate from '$lib/components/icons/DocumentDuplicate.svelte';
 	import Bookmark from '$lib/components/icons/Bookmark.svelte';
 	import BookmarkSlash from '$lib/components/icons/BookmarkSlash.svelte';
+	import Eye from '$lib/components/icons/Eye.svelte';
+	import EyeSlash from '$lib/components/icons/EyeSlash.svelte';
 	import {
 		getChatById,
 		getChatPinnedStatusById,
-		toggleChatPinnedStatusById
+		toggleChatPinnedStatusById,
+		updateChatUnreadStatusById
 	} from '$lib/apis/chats';
 	import { chats, folders, settings, theme, user } from '$lib/stores';
 	import { createMessagesList } from '$lib/utils';
@@ -42,6 +45,7 @@
 	export let onClose: Function;
 
 	export let chatId = '';
+	export let __is_unread__ = false;
 
 	let show = false;
 	let pinned = false;
@@ -56,6 +60,16 @@
 
 	const checkPinned = async () => {
 		pinned = await getChatPinnedStatusById(localStorage.token, chatId);
+	};
+
+	const unreadHandler = async () => {
+		// [PT-67C8] Add persistent unread indicators for chat conversations.
+		// Let the dedicated unread API drive manual read/unread so the same socket event
+		// path updates every device and every sidebar section consistently.
+		await updateChatUnreadStatusById(localStorage.token, chatId, !__is_unread__).catch((error) => {
+			toast.error(`${error}`);
+			return null;
+		});
 	};
 
 	const getChatAsText = async (chat) => {
@@ -387,6 +401,22 @@
 				{:else}
 					<Bookmark strokeWidth="1.5" />
 					<div class="flex items-center">{$i18n.t('Pin')}</div>
+				{/if}
+			</DropdownMenu.Item>
+
+			<DropdownMenu.Item
+				draggable="false"
+				class="flex gap-2 items-center px-3 py-1.5 text-sm  cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl"
+				on:click={() => {
+					unreadHandler();
+				}}
+			>
+				{#if __is_unread__}
+					<Eye strokeWidth="1.5" />
+					<div class="flex items-center">{$i18n.t('Mark as read')}</div>
+				{:else}
+					<EyeSlash strokeWidth="1.5" />
+					<div class="flex items-center">{$i18n.t('Mark as unread')}</div>
 				{/if}
 			</DropdownMenu.Item>
 

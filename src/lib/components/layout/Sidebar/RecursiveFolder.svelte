@@ -678,10 +678,13 @@
 					{/if}
 
 					{#each chats ?? [] as chat (chat.id)}
+						<!-- [PT-67C8] Add persistent unread indicators for chat conversations. -->
+						<!-- Folder rows reuse ChatItem, so forward unread here to keep folder and main sidebar sections aligned. -->
 						<ChatItem
 							id={chat.id}
 							title={chat.title}
 							createdAt={chat.created_at}
+							__is_unread__={chat.__is_unread__ ?? false}
 							{shiftKey}
 							on:change={(e) => {
 								dispatch('change', e.detail);

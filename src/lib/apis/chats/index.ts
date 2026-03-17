@@ -743,6 +743,54 @@ export const toggleChatPinnedStatusById = async (token: string, id: string) => {
 	return res;
 };
 
+export const updateChatUnreadStatusById = async (
+	token: string,
+	id: string,
+	__is_unread__: boolean
+) => {
+	let error = null;
+
+	// [PT-67C8] Add persistent unread indicators for chat conversations.
+	// Use a dedicated unread endpoint so the client can flip unread state without
+	// touching the general chat update flow that rewrites sidebar ordering.
+	const res = await fetch(`${WEBUI_API_BASE_URL}/chats/${id}/__unread__`, {
+		method: 'POST',
+		headers: {
+			Accept: 'application/json',
+			'Content-Type': 'application/json',
+			...(token && { authorization: `Bearer ${token}` })
+		},
+		body: JSON.stringify({
+			__is_unread__
+		})
+	})
+		.then(async (res) => {
+			if (!res.ok) throw await res.json();
+			return res.json();
+		})
+		.then((json) => {
+			return json;
+		})
+		.catch((err) => {
+			error = err;
+
+			if ('detail' in err) {
+				error = err.detail;
+			} else {
+				error = err;
+			}
+
+			console.error(err);
+			return null;
+		});
+
+	if (error) {
+		throw error;
+	}
+
+	return res;
+};
+
 export const cloneChatById = async (token: string, id: string, title?: string) => {
 	let error = null;
 

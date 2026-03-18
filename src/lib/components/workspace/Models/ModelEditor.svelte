@@ -113,6 +113,8 @@
 	export let suggestionTags: { name: string }[] = [];
 	let voices: { id: string; name?: string }[] = [];
 
+	// [PT-F5F7] Let models override the task model used for background tasks.
+	let taskModelId = '';
 	// [PT-EE0E] Let `__api_override__` in model metadata override API request fields.
 	let apiOverride = '';
 	// [PT-FA50] Let `__api_type__` in model metadata override the API type (Chat Completions or Responses API).
@@ -282,6 +284,15 @@
 			}
 		}
 
+		// [PT-F5F7] Let models override the task model used for background tasks.
+		if (taskModelId.trim() !== '') {
+			info.meta.__task_model_id__ = taskModelId.trim();
+		} else {
+			if (info.meta.__task_model_id__) {
+				delete info.meta.__task_model_id__;
+			}
+		}
+
 		// [PT-EE0E] Let `__api_override__` in model metadata override API request fields.
 		if (apiOverride.trim() !== '') {
 			try {
@@ -419,6 +430,8 @@
 			builtinTools = model?.meta?.builtinTools ?? builtinTools;
 			terminalId = model?.meta?.terminalId ?? '';
 			tts = { voice: model?.meta?.tts?.voice ?? '' };
+			// [PT-F5F7] Let models override the task model used for background tasks.
+			taskModelId = model?.meta?.__task_model_id__ ?? '';
 			// [PT-EE0E] Let `__api_override__` in model metadata override API request fields.
 			apiOverride = model?.meta?.__api_override__
 				? JSON.stringify(model.meta.__api_override__, null, 2)
@@ -936,6 +949,21 @@
 							bind:value={tts.voice}
 							{voices}
 							placeholder={$i18n.t('e.g. alloy, echo, shimmer')}
+						/>
+					</div>
+
+					<!-- [PT-F5F7] Let models override the task model used for background tasks. -->
+					<div class="my-4">
+						<div class="flex w-full justify-between mb-1">
+							<div class="self-center text-xs font-medium text-gray-500">
+								{$i18n.t('Task Model ID')}
+							</div>
+						</div>
+						<input
+							class="w-full text-sm bg-transparent outline-hidden"
+							type="text"
+							bind:value={taskModelId}
+							placeholder={$i18n.t('Use the system task model by default')}
 						/>
 					</div>
 

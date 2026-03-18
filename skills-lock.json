@@ -4,7 +4,7 @@
     "patch-software": {
       "source": "zetavg/agent-skills",
       "sourceType": "github",
-      "computedHash": "43d2eab2f6c73b3758467204a03abb23ec5ab4c2528bcf544f17bc81e3f60429"
+      "computedHash": "df705712af6384c37c1b03743763b283640a151b723a1c5a506212e051cbd31c"
     }
   }
 }

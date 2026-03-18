@@ -18,6 +18,15 @@ def get_task_model_id(
 ) -> str:
     # Set the task model
     task_model_id = default_model_id
+    # [PT-F5F7] Let models override the task model used for background tasks.
+    task_model_override = (
+        models.get(default_model_id, {})
+        .get("info", {})
+        .get("meta", {})
+        .get("__task_model_id__")
+    )
+    if isinstance(task_model_override, str) and task_model_override in models:
+        return task_model_override
     # Check if the user has a custom task model and use that model
     if models[task_model_id].get("connection_type") == "local":
         if task_model and task_model in models:

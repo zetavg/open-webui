@@ -39,6 +39,10 @@
 	import ChatCheck from '../icons/ChatCheck.svelte';
 	import Knobs from '../icons/Knobs.svelte';
 	import { WEBUI_API_BASE_URL } from '$lib/constants';
+	// [PT-302E] Add chat cloning to the in-chat menu.
+	import { cloneChatById, getChatList, getPinnedChatList } from '$lib/apis/chats';
+	// [PT-302E] Add chat cloning to the in-chat menu.
+	import { chats, currentChatPage, pinnedChats } from '$lib/stores';
 
 	const i18n = getContext('i18n');
 
@@ -59,6 +63,33 @@
 
 	let showShareChatModal = false;
 	let showDownloadChatModal = false;
+
+	// [PT-302E] Add chat cloning to the in-chat menu.
+	const cloneChatHandler = async () => {
+		if (!chat?.id || $temporaryChatEnabled) {
+			return;
+		}
+
+		const sourceTitle = chat?.chat?.title ?? chat?.title ?? '';
+		const clonedTitle = sourceTitle
+			? $i18n.t('Clone of {{TITLE}}', {
+					TITLE: sourceTitle
+				})
+			: undefined;
+
+		const res = await cloneChatById(localStorage.token, chat.id, clonedTitle).catch((error) => {
+			toast.error(`${error}`);
+			return null;
+		});
+
+		if (res?.id) {
+			await goto(`/c/${res.id}`);
+
+			currentChatPage.set(1);
+			await chats.set(await getChatList(localStorage.token, $currentChatPage));
+			await pinnedChats.set(await getPinnedChatList(localStorage.token));
+		}
+	};
 </script>
 
 <ShareChatModal bind:show={showShareChatModal} chatId={$chatId} />
@@ -190,9 +221,11 @@
 					{/if}
 
 					{#if shareEnabled && chat && (chat.id || $temporaryChatEnabled)}
+						<!-- [PT-302E] Add chat cloning to the in-chat menu. -->
 						<Menu
 							{chat}
 							{shareEnabled}
+							{cloneChatHandler}
 							shareHandler={() => {
 								showShareChatModal = !showShareChatModal;
 							}}

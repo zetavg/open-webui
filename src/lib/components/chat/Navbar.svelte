@@ -36,8 +36,12 @@
 	import ChatCheck from '../icons/ChatCheck.svelte';
 	import Knobs from '../icons/Knobs.svelte';
 	import { isTemporaryChatId } from '$lib/utils/chatId';
+	// [PT-EC2B] Add chat renaming to the in-chat menu.
+	import { updateChatById } from '$lib/apis/chats';
 	// [PT-302E] Add chat cloning to the in-chat menu.
 	import { cloneChatById } from '$lib/apis/chats';
+	// [PT-EC2B] Add chat renaming to the in-chat menu.
+	import { chatTitle as currentChatTitle } from '$lib/stores';
 	// [PT-302E] Add chat cloning to the in-chat menu.
 	import { refreshChatList } from '$lib/stores/chatList';
 
@@ -91,6 +95,43 @@
 		if (res?.id) {
 			await goto(`/c/${res.id}`);
 
+			await refreshChatList(localStorage.token, { refreshPinned: true });
+		}
+	};
+
+	// [PT-EC2B] Add chat renaming to the in-chat menu.
+	const renameChatHandler = async () => {
+		if (!chat?.id || $temporaryChatEnabled) {
+			return;
+		}
+
+		const currentTitle = chat?.chat?.title ?? '';
+		const promptedTitle = window.prompt($i18n.t('Rename'), currentTitle);
+
+		if (promptedTitle === null) {
+			return;
+		}
+
+		const nextTitle = promptedTitle.trim();
+
+		if (nextTitle === '') {
+			toast.error($i18n.t('Title cannot be an empty string.'));
+			return;
+		}
+
+		if (nextTitle === currentTitle) {
+			return;
+		}
+
+		const res = await updateChatById(localStorage.token, chat.id, {
+			title: nextTitle
+		}).catch((error) => {
+			toast.error(`${error}`);
+			return null;
+		});
+
+		if (res) {
+			currentChatTitle.set(nextTitle);
 			await refreshChatList(localStorage.token, { refreshPinned: true });
 		}
 	};
@@ -153,12 +194,14 @@
 							</div>
 
 							{#if shareEnabled && chat && (chat.id || $temporaryChatEnabled)}
+								<!-- [PT-EC2B] Add chat renaming to the in-chat menu. -->
 								<!-- [PT-302E] Add chat cloning to the in-chat menu. -->
 								<Menu
 									{chat}
 									{shareEnabled}
 									{readOnly}
 									{scrollToTop}
+									{renameChatHandler}
 									{cloneChatHandler}
 									shareHandler={() => {
 										showShareChatModal = !showShareChatModal;

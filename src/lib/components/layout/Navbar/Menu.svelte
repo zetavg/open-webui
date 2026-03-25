@@ -32,6 +32,8 @@
 	import AdjustmentsHorizontal from '$lib/components/icons/AdjustmentsHorizontal.svelte';
 	import Cube from '$lib/components/icons/Cube.svelte';
 	import Folder from '$lib/components/icons/Folder.svelte';
+	// [PT-EC2B] Add chat renaming to the in-chat menu.
+	import Pencil from '$lib/components/icons/Pencil.svelte';
 	import Share from '$lib/components/icons/Share.svelte';
 	import ArchiveBox from '$lib/components/icons/ArchiveBox.svelte';
 	import GarbageBin from '$lib/components/icons/GarbageBin.svelte';
@@ -48,6 +50,8 @@
 	export let shareHandler: Function;
 	export let moveChatHandler: Function;
 
+	// [PT-EC2B] Add chat renaming to the in-chat menu.
+	export let renameChatHandler: () => void | Promise<void> = () => {};
 	// [PT-302E] Add chat cloning to the in-chat menu.
 	export let cloneChatHandler: () => void | Promise<void> = () => {};
 	export let archiveChatHandler: Function;
@@ -447,6 +451,19 @@
 			</button>
 
 			{#if !readOnly && !$temporaryChatEnabled && chat?.id}
+				<!-- [PT-EC2B] Add chat renaming to the in-chat menu. -->
+				<button
+					draggable="false"
+					class="flex h-[1.6875rem] w-full items-center gap-2 rounded-xl px-2 text-[13px] cursor-pointer select-none hover:bg-gray-50/40 dark:hover:bg-gray-800/40"
+					id="chat-rename-button"
+					on:click={() => {
+						renameChatHandler();
+					}}
+				>
+					<Pencil className="size-3.5" strokeWidth="1.5" />
+					<div class="flex items-center">{$i18n.t('Rename')}</div>
+				</button>
+
 				<!-- [PT-302E] Add chat cloning to the in-chat menu. -->
 				<button
 					draggable="false"

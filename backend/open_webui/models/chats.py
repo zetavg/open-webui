@@ -491,6 +491,26 @@ class ChatTable:
         except Exception:
             return False
 
+    # [PT-ABAC] Let users manually mark chats as read or unread from the chat menu.
+    async def update_chat_read_status_by_id_and_user_id(
+        self, id: str, user_id: str, read: bool, db: AsyncSession | None = None
+    ) -> bool:
+        try:
+            async with get_async_db_context(db) as session:
+                chat = await session.get(Chat, id)
+                if chat and chat.user_id == user_id:
+                    if read:
+                        chat.last_read_at = int(time.time())
+                    else:
+                        # Mark unread by moving last_read_at behind updated_at so the
+                        # sidebar's "updated_at > last_read_at" check renders the dot.
+                        chat.last_read_at = (chat.updated_at or int(time.time())) - 1
+                    await session.commit()
+                    return True
+                return False
+        except Exception:
+            return False
+
     async def update_chat_title_by_id(self, id: str, title: str) -> ChatModel | None:
         try:
             async with get_async_db_context() as session:

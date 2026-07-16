@@ -19,7 +19,9 @@
 		getChatListByTagName,
 		getPinnedChatList,
 		updateChatById,
-		updateChatFolderIdById
+		updateChatFolderIdById,
+		// [PT-ABAC] Let users manually mark chats as read or unread from the chat menu.
+		updateChatReadStatusById
 	} from '$lib/apis/chats';
 	import {
 		chatId,
@@ -218,6 +220,28 @@
 			toast.error($i18n.t('Failed to archive chat.'));
 		} finally {
 			archiving = false;
+		}
+	};
+
+	// [PT-ABAC] Let users manually mark chats as read or unread from the chat menu.
+	// Optimistically adjust the local read markers so the unread dot flips
+	// immediately, then persist last_read_at on the server.
+	const setReadStatusHandler = async (id, read) => {
+		if (read) {
+			viewedAt = Date.now() / 1000;
+			lastReadAt = Date.now() / 1000;
+		} else {
+			// Clear the viewed marker so the sidebar recomputes this chat as unread.
+			viewedAt = null;
+			lastReadAt = null;
+		}
+
+		try {
+			await updateChatReadStatusById(localStorage.token, id, read);
+			dispatch('change');
+		} catch (error) {
+			console.error('Error updating chat read status:', error);
+			toast.error(`${error}`);
 		}
 	};
 
@@ -661,8 +685,13 @@
 				</div>
 			{:else}
 				<div class="flex self-center z-10 items-end">
+					<!-- [PT-ABAC] Add "Mark as read/unread" to the chat menu. -->
 					<ChatMenu
 						chatId={id}
+						{unread}
+						setReadStatusHandler={(read) => {
+							setReadStatusHandler(id, read);
+						}}
 						cloneChatHandler={() => {
 							cloneChatHandler(id);
 						}}

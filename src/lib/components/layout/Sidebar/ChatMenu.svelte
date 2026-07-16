@@ -15,6 +15,9 @@
 	import DocumentDuplicate from '$lib/components/icons/DocumentDuplicate.svelte';
 	import Bookmark from '$lib/components/icons/Bookmark.svelte';
 	import BookmarkSlash from '$lib/components/icons/BookmarkSlash.svelte';
+	// [PT-ABAC] Let users manually mark chats as read or unread from the chat menu.
+	import Eye from '$lib/components/icons/Eye.svelte';
+	import EyeSlash from '$lib/components/icons/EyeSlash.svelte';
 	import {
 		getChatById,
 		getChatPinnedStatusById,
@@ -40,6 +43,10 @@
 	export let onClose: Function;
 
 	export let chatId = '';
+
+	// [PT-ABAC] Let users manually mark chats as read or unread from the chat menu.
+	export let unread = false;
+	export let setReadStatusHandler: (read: boolean) => void = () => {};
 
 	let show = false;
 	let pinned = false;
@@ -388,6 +395,24 @@
 				{:else}
 					<Bookmark strokeWidth="1.5" />
 					<div class="flex items-center">{$i18n.t('Pin')}</div>
+				{/if}
+			</button>
+
+			<!-- [PT-ABAC] Let users manually mark chats as read or unread from the chat menu. -->
+			<button
+				draggable="false"
+				class="flex gap-2 items-center px-3 py-1.5 text-sm cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl w-full"
+				on:click={() => {
+					show = false;
+					setReadStatusHandler(unread);
+				}}
+			>
+				{#if unread}
+					<Eye strokeWidth="1.5" />
+					<div class="flex items-center">{$i18n.t('Mark as read')}</div>
+				{:else}
+					<EyeSlash strokeWidth="1.5" />
+					<div class="flex items-center">{$i18n.t('Mark as unread')}</div>
 				{/if}
 			</button>
 

@@ -1188,6 +1188,32 @@ async def pin_chat_by_id(id: str, user=Depends(get_verified_user), db: AsyncSess
 
 
 ############################
+# UpdateChatReadStatusById
+# [PT-ABAC] Let users manually mark chats as read or unread from the chat menu.
+############################
+
+
+class ChatReadStatusForm(BaseModel):
+    read: bool
+
+
+# [PT-ABAC] Let users manually mark chats as read or unread from the chat menu.
+# Builds on upstream's last_read_at signal so the sidebar unread dot updates the
+# same way an automatic read does.
+@router.post('/{id}/read', response_model=bool)
+async def update_chat_read_status_by_id(
+    id: str,
+    form_data: ChatReadStatusForm,
+    user=Depends(get_verified_user),
+    db: AsyncSession = Depends(get_async_session),
+):
+    chat = await Chats.get_chat_by_id_and_user_id(id, user.id, db=db)
+    if not chat:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=ERROR_MESSAGES.DEFAULT())
+    return await Chats.update_chat_read_status_by_id_and_user_id(id, user.id, form_data.read, db=db)
+
+
+############################
 # CloneChat
 ############################
 

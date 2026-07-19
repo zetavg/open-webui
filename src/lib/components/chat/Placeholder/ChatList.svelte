@@ -10,8 +10,17 @@
 	import Loader from '$lib/components/common/Loader.svelte';
 	import Spinner from '$lib/components/common/Spinner.svelte';
 	import Tooltip from '$lib/components/common/Tooltip.svelte';
+	// [PT-BDB5] Show an unread indicator on chats in the folder chat pane list, matching the sidebar.
+	import { chatId as currentChatId, activeChatIds } from '$lib/stores';
 
 	dayjs.extend(localizedFormat);
+
+	// [PT-BDB5] Show an unread indicator on chats in the folder chat pane list, matching the sidebar.
+	const isUnread = (chat) =>
+		chat.id !== $currentChatId &&
+		!$activeChatIds.has(chat.id) &&
+		(chat.last_read_at == null ||
+			(chat.updated_at != null && chat.updated_at > chat.last_read_at));
 
 	export let chats = [];
 
@@ -155,8 +164,20 @@
 				href={`/c/${chat.id}`}
 				on:click={() => (show = false)}
 			>
-				<div class="text-ellipsis line-clamp-1 w-full sm:basis-3/5">
-					{chat?.title}
+				<div class="flex items-center w-full sm:basis-3/5 min-w-0">
+					<!-- [PT-BDB5] Show an unread indicator on chats in the folder chat pane list, matching the sidebar. -->
+					{#if isUnread(chat)}
+						<div class="shrink-0 self-center pr-2.5 flex">
+							<div class="size-1.5 bg-sky-500 rounded-full" />
+						</div>
+					{/if}
+					<div
+						class="text-ellipsis line-clamp-1 w-full {isUnread(chat)
+							? 'font-medium text-gray-900 dark:text-gray-100'
+							: ''}"
+					>
+						{chat?.title}
+					</div>
 				</div>
 
 				<div class="hidden sm:flex sm:basis-2/5 items-center justify-end gap-2">

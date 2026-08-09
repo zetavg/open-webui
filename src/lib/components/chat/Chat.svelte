@@ -49,6 +49,8 @@
 		desktopEvent
 	} from '$lib/stores';
 	import { refreshChatList, refreshFolderChatLists } from '$lib/stores/chatList';
+	// [PT-C2DF] Let users manually mark a chat unread and have it stick.
+	import { isChatManuallyUnread, clearChatManuallyUnread } from '$lib/stores/chatList';
 
 	import { WEBUI_API_BASE_URL } from '$lib/constants';
 
@@ -540,7 +542,8 @@
 		// $chatId still holds the previous chat here — loadChat() updates it.
 		if ($chatId && $chatId !== chatIdProp && !$temporaryChatEnabled) {
 			noteChatDebug('marking outgoing chat read', { outgoingChatId: $chatId });
-			updateLastReadAt($chatId);
+			// [PT-C2DF] Don't overwrite a manual unread mark on the chat being left.
+			updateLastReadAt($chatId, { skipIfManuallyUnread: true });
 		}
 
 		clearTimeout(saveControlsTimer);
@@ -573,6 +576,9 @@
 
 			// Mark chat read when initially loading it
 			if (chatIdProp && !$temporaryChatEnabled) {
+				// [PT-C2DF] The user is genuinely viewing this chat again, so any manual
+				// unread mark on it no longer needs to be protected.
+				clearChatManuallyUnread(chatIdProp);
 				updateLastReadAt(chatIdProp);
 			}
 
@@ -620,7 +626,8 @@
 		await saveControls();
 
 		if ($chatId && !$temporaryChatEnabled) {
-			updateLastReadAt($chatId);
+			// [PT-C2DF] Don't overwrite a manual unread mark on the chat being left.
+			updateLastReadAt($chatId, { skipIfManuallyUnread: true });
 		}
 
 		loading = true;
@@ -890,7 +897,13 @@
 		}
 	};
 
-	const updateLastReadAt = (id) => {
+	// [PT-C2DF] `skipIfManuallyUnread` guards the "mark the outgoing chat read" call
+	// sites below so a manual unread mark survives navigating away — without it, this
+	// would immediately overwrite a manual unread mark on the chat being left.
+	const updateLastReadAt = (id, { skipIfManuallyUnread = false } = {}) => {
+		if (skipIfManuallyUnread && isChatManuallyUnread(id)) {
+			return;
+		}
 		$socket?.emit('events:chat', {
 			chat_id: id,
 			data: { type: 'last_read_at' }
@@ -979,6 +992,9 @@
 							await loadChat();
 						}
 						if ($chatId && !$temporaryChatEnabled) {
+							// [PT-C2DF] The user is still on this chat watching it complete, so
+							// any manual unread mark on it no longer needs to be protected.
+							clearChatManuallyUnread($chatId);
 							updateLastReadAt($chatId);
 						}
 					}
@@ -1381,7 +1397,8 @@
 				clearTimeout(saveControlsTimer);
 				saveControls();
 				if (chatIdProp && !$temporaryChatEnabled) {
-					updateLastReadAt(chatIdProp);
+					// [PT-C2DF] Don't overwrite a manual unread mark on the chat being left.
+					updateLastReadAt(chatIdProp, { skipIfManuallyUnread: true });
 				}
 				pageSubscribe();
 				showControlsSubscribe();
@@ -1701,7 +1718,8 @@
 		// Mark the outgoing chat as read before resetting; in-place created chats
 		// keep chatIdProp undefined, so navigateHandler never marks them read.
 		if ($chatId && !$temporaryChatEnabled) {
-			updateLastReadAt($chatId);
+			// [PT-C2DF] Don't overwrite a manual unread mark on the chat being left.
+			updateLastReadAt($chatId, { skipIfManuallyUnread: true });
 		}
 
 		if ($user?.role !== 'admin' && $user?.permissions?.chat?.temporary_enforced) {

@@ -157,3 +157,22 @@ export const resetChatListState = () => {
 	chatsStore.set(null);
 	pinnedChatsStore.set([]);
 };
+
+// [PT-C2DF] Let users manually mark a chat unread from the chat menu and have it stick.
+// Chat.svelte marks the outgoing chat read every time the user navigates away from it,
+// starts a new chat, or leaves the chat surface — which otherwise instantly overwrites
+// a manual unread mark the moment the user switches away. Call sites that mark a chat
+// read as a side effect of leaving it should skip that call while this flag is set;
+// call sites that mark a chat read because the user is genuinely viewing it again should
+// clear the flag instead of skipping.
+const manuallyUnreadChatIds = new Set<string>();
+
+export const markChatManuallyUnread = (chatId: string) => {
+	manuallyUnreadChatIds.add(chatId);
+};
+
+export const clearChatManuallyUnread = (chatId: string) => {
+	manuallyUnreadChatIds.delete(chatId);
+};
+
+export const isChatManuallyUnread = (chatId: string) => manuallyUnreadChatIds.has(chatId);

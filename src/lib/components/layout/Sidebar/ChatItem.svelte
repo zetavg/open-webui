@@ -40,7 +40,7 @@
 		settings,
 		user
 	} from '$lib/stores';
-	import { refreshChatList } from '$lib/stores/chatList';
+	import { refreshChatList, markChatManuallyUnread } from '$lib/stores/chatList';
 
 	import ChatMenu from './ChatMenu.svelte';
 	import DeleteConfirmDialog from '$lib/components/common/ConfirmDialog.svelte';
@@ -121,14 +121,26 @@
 	// would overwrite the `lastReadAt` prop with a stale server value.
 	let viewedAt: number | null = null;
 
-	$: if (id === $chatId) {
+	// [PT-C2DF] Show the unread indicator immediately after marking the active chat
+	// unread, instead of only once the user navigates away.
+	// Without this, the `viewedAt` sync below re-fires (triggered by the prop churn
+	// from markUnreadHandler's own store update) and immediately overwrites the
+	// `viewedAt = null` it just set, before a render ever shows the unread state.
+	let manuallyMarkedUnread = false;
+
+	$: if (id === $chatId && !manuallyMarkedUnread) {
 		viewedAt = updatedAt ?? Date.now() / 1000;
+	}
+
+	// [PT-C2DF] Drop the guard once this item is no longer the active chat, so a
+	// genuine future visit still auto-marks it read as normal.
+	$: if (id !== $chatId) {
+		manuallyMarkedUnread = false;
 	}
 
 	$: effectiveReadAt = Math.max(lastReadAt ?? 0, viewedAt ?? 0) || null;
 
 	$: unread =
-		id !== $chatId &&
 		!active &&
 		(effectiveReadAt === null || (updatedAt !== null && updatedAt > effectiveReadAt));
 	$: showInlineActions = id === $chatId || confirmEdit || mouseOver || selected;
@@ -148,9 +160,16 @@
 		});
 		if (!res) return;
 
+		// [PT-C2DF] Show the unread indicator immediately after marking the active chat
+		// unread, instead of only once the user navigates away.
+		manuallyMarkedUnread = true;
 		viewedAt = null;
 		lastReadAt = res.last_read_at ?? 0;
 		onReadStateChange(res);
+
+		// [PT-C2DF] Let users manually mark a chat unread and have it stick — see
+		// chatList.ts for why this needs to survive navigating away.
+		markChatManuallyUnread(id);
 	};
 
 	let showShareChatModal = false;
